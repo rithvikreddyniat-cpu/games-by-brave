@@ -51,7 +51,10 @@ export class ClueSystem {
     this.reset();
   }
 
-  reset() {
+  reset(cluesList = null) {
+    if (cluesList) {
+      this.initialClues = cluesList;
+    }
     // Clone initial clue data with initial state
     this.clues = this.initialClues.map(c => ({
       ...c,

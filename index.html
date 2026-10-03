@@ -50,6 +50,30 @@
           </div>
         </div>
 
+        <!-- Case Intro Screen -->
+        <div id="screen-case-intro" class="overlay-screen hidden">
+          <div class="screen-content">
+            <div id="case-intro-tag" class="panel-badge">PANEL #01: THE ALLEY</div>
+            <h2 id="case-intro-title" class="noir-heading">THE ALLEY</h2>
+            <div id="case-intro-narration" class="narration-box">
+              "The rain glistened on the slick cobblestones..."
+            </div>
+            <button id="btn-begin-case" class="comic-btn">BEGIN CASE [SPACE]</button>
+          </div>
+        </div>
+
+        <!-- Case Solved Screen -->
+        <div id="screen-case-solved" class="overlay-screen hidden">
+          <div class="screen-content">
+            <div class="impact-text text-sm">THEORY CONFIRMED</div>
+            <h2 id="case-solved-title" class="noir-heading">CASE SOLVED!</h2>
+            <div id="case-solved-narration" class="narration-box">
+              "Case 1 solved! The evidence has been reconstructed."
+            </div>
+            <button id="btn-next-case" class="comic-btn">NEXT CASE [SPACE] ►</button>
+          </div>
+        </div>
+
         <!-- Case Board Modal Screen -->
         <div id="modal-caseboard" class="overlay-screen hidden">
           <div class="screen-content caseboard-content">
@@ -174,7 +198,7 @@
               <strong>RECONSTRUCTION CONCLUSION:</strong>
               <div id="final-theory-text" class="theory-text">None</div>
             </div>
-            <button id="btn-restart" class="comic-btn">RETRY PANEL [SPACE]</button>
+            <button id="btn-restart" class="comic-btn">RETRY CASE [SPACE]</button>
           </div>
         </div>
       </div>
@@ -183,6 +207,7 @@
       <footer class="comic-footer">
         <div class="hud-bar">
           <div class="hud-item">STATUS: <span id="hud-status">STANDBY</span></div>
+          <div class="hud-item">CASE: <span id="hud-case-num">1/3</span></div>
           <div class="hud-item">CLUES: <span id="hud-clues">0/5</span></div>
           <div class="hud-actions">
             <button id="btn-open-caseboard" class="hud-btn">📁 BOARD [C]</button>

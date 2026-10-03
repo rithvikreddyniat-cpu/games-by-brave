@@ -8,18 +8,21 @@ export class Snake {
     this.reset();
   }
 
-  reset() {
-    const startX = Math.floor(this.gridCols / 2);
-    const startY = Math.floor(this.gridRows / 2);
+  reset(snakeStart = null) {
+    const startX = snakeStart ? snakeStart.x : Math.floor(this.gridCols / 2);
+    const startY = snakeStart ? snakeStart.y : Math.floor(this.gridRows / 2);
+    const initialDirName = snakeStart ? snakeStart.dir : 'RIGHT';
+    this.direction = DIRECTIONS[initialDirName] || DIRECTIONS.RIGHT;
 
-    this.direction = DIRECTIONS.RIGHT;
-    
-    // Create initial snake body segments extending to the left
+    const dx = this.direction.x;
+    const dy = this.direction.y;
+
+    // Create initial snake body segments extending backward from initial direction
     this.body = [];
     for (let i = 0; i < CONFIG.INITIAL_SNAKE_LENGTH; i++) {
       this.body.push({
-        x: startX - i,
-        y: startY
+        x: startX - (dx * i),
+        y: startY - (dy * i)
       });
     }
 
@@ -38,8 +41,9 @@ export class Snake {
   /**
    * Move the snake forward 1 step in the specified direction.
    * @param {Object} nextDirection - Direction object {x, y, name}
+   * @param {boolean} shouldGrow - Whether to grow snake by 1 segment (skip tail pop)
    */
-  update(nextDirection) {
+  update(nextDirection, shouldGrow = false) {
     if (this.isDead) return;
 
     if (nextDirection) {
@@ -55,18 +59,37 @@ export class Snake {
     // Unshift new head position onto body array
     this.body.unshift(newHead);
 
-    // For foundation snake movement (without food/growing yet), pop the tail segment to keep length constant
-    this.body.pop();
+    // If not growing, pop tail segment to keep length constant
+    if (!shouldGrow) {
+      this.body.pop();
+    }
 
     this.stepsCount++;
   }
 
   /**
-   * Check if the snake head collided with grid walls.
+   * Grow the snake by duplicating the tail segment (skips tail removal effect)
    */
-  checkWallCollision() {
+  grow() {
+    if (this.body.length > 0) {
+      const tailSeg = this.body[this.body.length - 1];
+      this.body.push({ x: tailSeg.x, y: tailSeg.y });
+    }
+  }
+
+  /**
+   * Check if the snake head collided with grid boundaries or interior walls.
+   * @param {Array<string>} walls - Optional 20x20 wall grid array
+   */
+  checkWallCollision(walls = null) {
     const { x, y } = this.head;
-    return x < 0 || x >= this.gridCols || y < 0 || y >= this.gridRows;
+    if (x < 0 || x >= this.gridCols || y < 0 || y >= this.gridRows) {
+      return true;
+    }
+    if (walls && walls[y] && walls[y][x] === '#') {
+      return true;
+    }
+    return false;
   }
 
   /**

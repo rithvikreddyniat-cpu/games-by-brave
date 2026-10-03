@@ -60,7 +60,8 @@ export class ReconstructionSystem {
     this.reset();
   }
 
-  reset() {
+  reset(requiredClueThreshold = 3) {
+    this.requiredClueThreshold = requiredClueThreshold;
     this.selectedChoices = {
       entry: 'window',
       struggle: 'ambush',

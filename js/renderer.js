@@ -39,13 +39,17 @@ export class Renderer {
   /**
    * Main render method called every frame
    */
-  render(snake, lightSystem, clueSystem, gameState, deathWasInkPhase = false) {
+  render(snake, lightSystem, clueSystem, gameState, deathWasInkPhase = false, walls = null) {
     if (!this.ctx) return;
     const isInkPhase = (gameState === GAME_STATES.INK_PHASE) || (gameState === GAME_STATES.GAME_OVER && deathWasInkPhase);
 
     if (isInkPhase) {
       // --- INK PHASE: White Paper Environment & Persistent Ink Trails ---
       this.inkSystem.render(this.ctx, this.width, this.height);
+
+      if (walls) {
+        this.drawWalls(walls);
+      }
 
       if (clueSystem) {
         clueSystem.render(this.ctx, this.cellSize, true);
@@ -58,6 +62,10 @@ export class Renderer {
       // --- LIGHT PHASE: Pitch Darkness & Moving Light Pools ---
       this.clear();
       this.drawGrid();
+
+      if (walls) {
+        this.drawWalls(walls);
+      }
 
       if (clueSystem) {
         clueSystem.render(this.ctx, this.cellSize, false);
@@ -72,6 +80,29 @@ export class Renderer {
     }
 
     this.drawComicBorder();
+  }
+
+  drawWalls(walls) {
+    if (!walls) return;
+    this.ctx.save();
+    for (let r = 0; r < this.rows; r++) {
+      const rowStr = walls[r];
+      if (!rowStr) continue;
+      for (let c = 0; c < this.cols; c++) {
+        if (rowStr[c] === '#') {
+          const x = c * this.cellSize;
+          const y = r * this.cellSize;
+          // Solid black block
+          this.ctx.fillStyle = '#08080a';
+          this.ctx.fillRect(x, y, this.cellSize, this.cellSize);
+          // Thick paper-white outline
+          this.ctx.strokeStyle = '#f5f3eb';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(x + 1, y + 1, this.cellSize - 2, this.cellSize - 2);
+        }
+      }
+    }
+    this.ctx.restore();
   }
 
   clear() {
