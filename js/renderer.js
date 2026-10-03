@@ -31,9 +31,14 @@ export class Renderer {
   /**
    * Main render method called every frame
    */
-  render(snake, gameState) {
+  render(snake, lightSystem, clueSystem, gameState) {
     this.clear();
     this.drawGrid();
+
+    // Render Discovered & Collected Clues
+    if (clueSystem) {
+      clueSystem.render(this.ctx, this.cellSize);
+    }
     
     if (snake && (gameState === 'PLAYING' || gameState === 'GAME_OVER')) {
       this.drawSnake(snake);

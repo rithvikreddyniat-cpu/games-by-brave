@@ -26,7 +26,15 @@
       <div class="panel-frame" id="panel-frame">
         <canvas id="game-canvas"></canvas>
 
-        <!-- Overlay Screens -->
+        <!-- Evidence Toast Popup Notification -->
+        <div id="evidence-toast" class="evidence-toast hidden">
+          <div class="toast-badge">EVIDENCE FOUND</div>
+          <h3 id="toast-title" class="toast-title">FRESH FOOTPRINT</h3>
+          <div id="toast-desc" class="toast-desc">"A heavy boot imprint smeared across the tile floor."</div>
+          <button id="btn-toast-dismiss" class="comic-btn btn-sm">COLLECT EVIDENCE [ENTER]</button>
+        </div>
+
+        <!-- Title Screen -->
         <div id="screen-title" class="overlay-screen active">
           <div class="screen-content">
             <h2 class="noir-heading">THE UNPRINTED PANEL</h2>
@@ -38,6 +46,9 @@
                 <span class="key-badge">W A S D</span> / <span class="key-badge">ARROWS</span> : MOVE DETECTIVE
               </div>
               <div class="control-item">
+                <span class="key-badge">C</span> : TOGGLE CASE BOARD
+              </div>
+              <div class="control-item">
                 <span class="key-badge">SPACE</span> / <span class="key-badge">TAP</span> : START CASE
               </div>
             </div>
@@ -45,6 +56,21 @@
           </div>
         </div>
 
+        <!-- Case Board Modal Screen -->
+        <div id="modal-caseboard" class="overlay-screen hidden">
+          <div class="screen-content caseboard-content">
+            <h2 class="noir-heading">CASE BOARD</h2>
+            <div class="narration-box" id="caseboard-summary">
+              CLUES COLLECTED: 0 / 5
+            </div>
+            <ul id="caseboard-list" class="caseboard-list">
+              <!-- Dynamically populated via JS -->
+            </ul>
+            <button id="btn-close-caseboard" class="comic-btn">RESUME CASE [C]</button>
+          </div>
+        </div>
+
+        <!-- Game Over Screen -->
         <div id="screen-game-over" class="overlay-screen hidden">
           <div class="screen-content">
             <h2 class="noir-heading error-text">CASE CLOSED</h2>
@@ -52,7 +78,7 @@
               "A dead end. The panel collapsed before the truth could surface..."
             </div>
             <div class="stats-box">
-              <span id="final-score-label">DISTANCES COVERED: <strong id="final-score-val">0</strong> STEPS</span>
+              <span id="final-score-label">EVIDENCE RECOVERED: <strong id="final-clues-val">0 / 5</strong></span>
             </div>
             <button id="btn-restart" class="comic-btn">RETRY PANEL [SPACE]</button>
           </div>
@@ -63,7 +89,8 @@
       <footer class="comic-footer">
         <div class="hud-bar">
           <div class="hud-item">STATUS: <span id="hud-status">STANDBY</span></div>
-          <div class="hud-item">STEPS: <span id="hud-steps">0</span></div>
+          <div class="hud-item">CLUES: <span id="hud-clues">0/5</span></div>
+          <button id="btn-open-caseboard" class="hud-btn">📁 CASE BOARD [C]</button>
         </div>
 
         <!-- Virtual Touch D-Pad for Mobile Browsers -->
