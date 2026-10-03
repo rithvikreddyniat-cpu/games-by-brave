@@ -72,185 +72,279 @@ export const CASES = [
       }
     ],
     requiredClues: 3,
-    hasTwist: false
+    lightScale: 1.0,
+    tickMs: 130,
+    hasTwist: false,
+    questions: [
+      {
+        id: 'entry',
+        title: 'I. POINT OF ENTRY',
+        evidenceRef: 'Shattered Window & Muddy Footprints',
+        options: [
+          { id: 'window', label: 'THROUGH THE FIRE ESCAPE WINDOW', desc: 'Shattered glass indicates forced entry from outside.' },
+          { id: 'door', label: 'THROUGH THE MAIN DOORWAY', desc: 'The intruder had a key or walked right past security.' }
+        ]
+      },
+      {
+        id: 'struggle',
+        title: 'II. NATURE OF THE CONFRONTATION',
+        evidenceRef: 'Bloodstain & Torn Photograph',
+        options: [
+          { id: 'ambush', label: 'THE VICTIM WAS AMBUSHED FROM BEHIND', desc: 'No defensive wounds. Surprised at the desk.' },
+          { id: 'argument', label: 'A FIERCE ARGUMENT BROKE OUT', desc: 'Personal confrontation that escalated to violence.' }
+        ]
+      },
+      {
+        id: 'suspect',
+        title: 'III. PRIMARY SUSPECT PROFILE',
+        evidenceRef: 'Engraved Lighter ("D.S.")',
+        options: [
+          { id: 'intruder', label: 'AN UNKNOWN BURGLAR IN HEAVY BOOTS', desc: 'A lone intruder seeking valuables.' },
+          { id: 'insider', label: 'AN INSIDER CONNECTED TO THE POLICE', desc: 'Someone who knew the victim and left a personal item.' }
+        ]
+      }
+    ]
   },
   {
     id: 'case2',
     title: 'THE OFFICE',
     panelTag: 'PANEL #02: THE OFFICE',
-    intro: 'The victim’s study smelled of old paper and stale tobacco. Interior partitions formed a maze of shadows...',
+    intro: "The victim's office. Every drawer pulled, every light off. Whoever did this knew the building.",
     walls: [
       '....................',
       '....................',
-      '....####....####....',
-      '....#..#....#..#....',
-      '....#..#....#..#....',
+      '....................',
+      '...####......####...',
+      '...####......####...',
       '....................',
       '....................',
-      '....####....####....',
-      '....#..........#....',
-      '....#..........#....',
+      '........####........',
       '....................',
       '....................',
-      '....####....####....',
-      '....#..#....#..#....',
-      '....#..#....#..#....',
-      '....................',
-      '....................',
+      '..####........####..',
+      '..####........####..',
+      '.........##.........',
+      '.........##.........',
+      '.........##.........',
+      '.........##..####...',
+      '.............####...',
       '....................',
       '....................',
       '....................'
     ],
-    snakeStart: { x: 2, y: 2, dir: 'RIGHT' },
+    snakeStart: { x: 6, y: 18, dir: 'RIGHT' },
     clues: [
       {
-        id: 'office_key',
-        name: 'Brass Key',
-        col: 2,
+        id: 'back_door',
+        name: 'Back Door Ajar',
+        col: 1,
+        row: 1,
+        icon: '🚪',
+        description: 'Unlocked from the inside. The killer left in a hurry.'
+      },
+      {
+        id: 'torn_ledger',
+        name: 'Torn Ledger',
+        col: 18,
+        row: 1,
+        icon: '📒',
+        description: 'Pages ripped out. The missing entries were payments to the precinct.'
+      },
+      {
+        id: 'office_phone',
+        name: 'Phone Off The Hook',
+        col: 10,
         row: 5,
-        icon: '🔑',
-        description: 'A heavy brass key tucked beneath a desk drawer.'
+        icon: '📞',
+        description: 'The last call went to a number inside Grid City Police.'
       },
       {
-        id: 'safe_code',
-        name: 'Cipher Note',
-        col: 8,
-        row: 3,
-        icon: '📜',
-        description: 'Scrawled numbers matching the wall safe dial.'
+        id: 'open_safe',
+        name: 'Open Safe',
+        col: 1,
+        row: 12,
+        icon: '🔐',
+        description: 'No scratches on the lock. Someone knew the combination.'
       },
       {
-        id: 'poison_vial',
-        name: 'Empty Vial',
+        id: 'warm_coffee',
+        name: 'Warm Coffee',
+        col: 18,
+        row: 13,
+        icon: '☕',
+        description: 'Still warm. The victim had company, and trusted them.'
+      },
+      {
+        id: 'typed_note',
+        name: 'Unfinished Note',
+        col: 7,
+        row: 13,
+        icon: '📝',
+        description: 'A typed confession that stops mid-sentence.'
+      },
+      {
+        id: 'broken_watch',
+        name: 'Broken Watch',
         col: 17,
-        row: 4,
-        icon: '🧪',
-        description: 'A glass vial smelling of bitter almonds.'
-      },
-      {
-        id: 'shredded_memo',
-        name: 'Shredded Document',
-        col: 2,
-        row: 15,
-        icon: '📄',
-        description: 'Strips of paper referencing a financial audit.'
-      },
-      {
-        id: 'bloody_dagger',
-        name: 'Letter Opener',
-        col: 10,
-        row: 9,
-        icon: '🗡️',
-        description: 'An ornamental dagger stained near the hilt.'
-      },
-      {
-        id: 'gold_watch',
-        name: 'Stopped Pocketwatch',
-        col: 17,
-        row: 14,
-        icon: '⏱️',
-        description: 'Hands frozen at precisely 11:42 PM.'
-      },
-      {
-        id: 'burnt_letter',
-        name: 'Ashen Letter',
-        col: 10,
         row: 17,
-        icon: '✉️',
-        description: 'Half-burnt correspondence signed by an unknown blackmailer.'
+        icon: '⌚',
+        description: 'Stopped at 11:47. Whoever wore it fought back.'
       }
     ],
-    requiredClues: 4,
-    hasTwist: false
+    requiredClues: 7,
+    lightScale: 0.85,
+    tickMs: 125,
+    hasTwist: false,
+    questions: [
+      {
+        id: 'office_taken',
+        title: 'I. WHAT WAS TAKEN?',
+        evidenceRef: 'Open Safe & Torn Ledger',
+        options: [
+          { id: 'money', label: 'CASH FROM THE SAFE', desc: 'A simple robbery that went wrong.' },
+          { id: 'secrets', label: 'THE LEDGER PAGES', desc: 'Someone needed the payments to disappear.' }
+        ]
+      },
+      {
+        id: 'office_access',
+        title: 'II. WHO HAD ACCESS?',
+        evidenceRef: 'No Forced Entry & Call To The Precinct',
+        options: [
+          { id: 'stranger', label: 'A STRANGER PICKED THE LOCK', desc: 'A professional burglar with time to spare.' },
+          { id: 'insider', label: 'SOMEONE FROM THE PRECINCT', desc: 'Someone with a key, a badge and a reason.' }
+        ]
+      }
+    ]
   },
   {
     id: 'case3',
     title: 'THE UNPRINTED PANEL',
     panelTag: 'PANEL #03: THE UNPRINTED PANEL',
-    intro: 'Something is wrong... The final panel is incomplete. The investigation and the crime are converging...',
+    intro: 'The last panel. It was never printed. Whatever happened here, the page is still waiting for an ending.',
     walls: [
       '....................',
       '....................',
-      '......######........',
-      '......#....#........',
-      '......#....#........',
-      '......#....#........',
       '....................',
       '....................',
-      '....####....####....',
-      '....#..........#....',
-      '....#..........#....',
+      '....##........##....',
+      '....##........##....',
       '....................',
       '....................',
-      '......#....#........',
-      '......#....#........',
-      '......######........',
+      '....................',
+      '.........##.........',
+      '.........##.........',
+      '....................',
+      '....................',
+      '....................',
+      '....##........##....',
+      '....##........##....',
       '....................',
       '....................',
       '....................',
       '....................'
     ],
-    snakeStart: { x: 2, y: 10, dir: 'RIGHT' },
+    snakeStart: { x: 5, y: 18, dir: 'RIGHT' },
     clues: [
       {
-        id: 'ink_bottle',
-        name: 'Spilled Inkwell',
-        col: 4,
-        row: 3,
-        icon: '🖋️',
-        description: 'Thick black drawing ink pooling across the panel margin.'
+        id: 'wet_inkwell',
+        name: 'Wet Inkwell',
+        col: 1,
+        row: 1,
+        icon: '✒️',
+        description: 'The ink is still wet. This panel was being drawn when it happened.'
+      },
+      {
+        id: 'pencil_sketch',
+        name: 'Pencil Sketch',
+        col: 18,
+        row: 2,
+        icon: '✏️',
+        description: 'A rough outline of a figure in a trench coat. The face is blank.'
+      },
+      {
+        id: 'bootprint_trail',
+        name: 'Bootprint Trail',
+        col: 10,
+        row: 6,
+        icon: '👣',
+        description: 'The same boots as the alley. They stop exactly where you started.'
+      },
+      {
+        id: 'ds_lighter',
+        name: 'Engraved Lighter',
+        col: 7,
+        row: 10,
+        icon: '🔥',
+        description: 'A silver lighter stamped "D.S." It is still warm.',
+        key: true
+      },
+      {
+        id: 'torn_edge',
+        name: 'Torn Panel Edge',
+        col: 18,
+        row: 10,
+        icon: '📰',
+        description: 'The border is torn from the inside. Something wanted out.'
+      },
+      {
+        id: 'smashed_lamp',
+        name: 'Smashed Lamp',
+        col: 2,
+        row: 12,
+        icon: '💡',
+        description: 'The only light in the panel, destroyed on purpose.'
+      },
+      {
+        id: 'fedora',
+        name: 'Left-Behind Fedora',
+        col: 12,
+        row: 17,
+        icon: '🎩',
+        description: "Not the victim's. It fits a detective's head."
       },
       {
         id: 'detective_badge',
-        name: 'Silver Shield',
-        col: 15,
-        row: 4,
-        icon: '🛡️',
-        description: 'Badge #404 stamped Detective Snake.'
-      },
-      {
-        id: 'torn_sketch',
-        name: 'Panel Layout Sketch',
-        col: 10,
-        row: 9,
-        icon: '🎨',
-        description: 'A rough storyboard showing the crime before it was drawn.'
-      },
-      {
-        id: 'revolver_casing',
-        name: 'Spent Casing',
-        col: 3,
-        row: 16,
-        icon: '🔫',
-        description: '.38 caliber shell matching the detective’s sidearm.'
-      },
-      {
-        id: 'fingerprint_card',
-        name: 'Smudged Dossier',
-        col: 15,
-        row: 15,
-        icon: '📁',
-        description: 'Fingerprint card with Detective Snake’s own prints.'
-      },
-      {
-        id: 'blackmail_note',
-        name: 'Threatening Note',
-        col: 9,
-        row: 4,
-        icon: '📩',
-        description: '"We know what you drew in the unprinted panel."'
-      },
-      {
-        id: 'stolen_ledger',
-        name: 'Evidence Logbook',
-        col: 10,
-        row: 17,
-        icon: '📖',
-        description: 'The official casebook with pages ripped from tonight’s entry.'
+        name: 'Detective Badge',
+        col: 13,
+        row: 12,
+        icon: '⭐',
+        description: 'Number scratched out, but the case file says D. Snake.',
+        key: true
       }
     ],
-    requiredClues: 3,
-    hasTwist: true
+    requiredClues: 6,
+    lightScale: 0.75,
+    tickMs: 120,
+    hasTwist: true,
+    questions: [
+      {
+        id: 'panel_when',
+        title: 'I. WHEN WAS THE PANEL DRAWN?',
+        evidenceRef: 'Wet Inkwell & Pencil Sketch',
+        options: [
+          { id: 'during', label: 'WHILE THE CRIME HAPPENED', desc: 'The artist was a witness.' },
+          { id: 'after', label: 'AFTER, TO COVER IT UP', desc: 'Someone redrew the scene.' }
+        ]
+      },
+      {
+        id: 'panel_who',
+        title: 'II. WHO IS IN THE SKETCH?',
+        evidenceRef: 'Trench-Coat Figure & Bootprint Trail',
+        options: [
+          { id: 'killer', label: 'THE KILLER', desc: 'A stranger who left the boots behind.' },
+          { id: 'detective', label: 'THE DETECTIVE', desc: 'The boots stop exactly where the detective began.' }
+        ]
+      },
+      {
+        id: 'panel_lamp',
+        title: 'III. WHY WAS THE LAMP SMASHED?',
+        evidenceRef: 'Smashed Lamp & Torn Panel Edge',
+        options: [
+          { id: 'darkness', label: 'THE KILLER NEEDED DARKNESS', desc: 'Light would have exposed the face.' },
+          { id: 'unprinted', label: 'SOMEONE WANTED THE PANEL UNPRINTED', desc: 'The scene was never meant to be seen.' }
+        ]
+      }
+    ]
   }
 ];
 

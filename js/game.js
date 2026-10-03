@@ -274,7 +274,7 @@ export class Game {
       case GAME_STATES.REVELATION:
         this.showScreen('screen-revelation');
         if (this.hudStatus) this.hudStatus.textContent = 'CASE REVEALED';
-        if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVELATION';
+        if (this.panelTag) this.panelTag.textContent = 'FINAL PANEL: THE REVELATION';
         break;
 
       case GAME_STATES.GAME_OVER:
@@ -326,7 +326,8 @@ export class Game {
 
     this.snake.reset(c.snakeStart);
     this.clueSystem.reset(c.clues);
-    this.reconstructionSystem.reset(c.requiredClues);
+    this.reconstructionSystem.reset(c);
+    this.renderer.lightSystem.setScale(c.lightScale || 1.0);
     this.renderer.inkSystem.reset();
     this.inputHandler.reset();
 
@@ -395,11 +396,13 @@ export class Game {
 
       if ((this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) && !this.isOverlayOpen()) {
         this.accumulator += deltaTime;
+        const currentCase = CASES[this.currentCaseIndex];
+        const tickMs = currentCase ? (currentCase.tickMs || CONFIG.TICK_INTERVAL_MS) : CONFIG.TICK_INTERVAL_MS;
 
         // Update grid step when accumulator reaches tick interval
-        while (this.accumulator >= CONFIG.TICK_INTERVAL_MS) {
+        while (this.accumulator >= tickMs) {
           this.tick();
-          this.accumulator -= CONFIG.TICK_INTERVAL_MS;
+          this.accumulator -= tickMs;
         }
       } else if (this.isOverlayOpen()) {
         this.accumulator = 0;
@@ -664,6 +667,14 @@ export class Game {
         }
       });
     });
+
+    // Enable / disable confirm theory button based on whether all questions are answered
+    if (this.btnConfirmTheory) {
+      const allAnswered = this.reconstructionSystem.isAllAnswered();
+      this.btnConfirmTheory.disabled = !allAnswered;
+      this.btnConfirmTheory.style.opacity = allAnswered ? '1' : '0.4';
+      this.btnConfirmTheory.style.cursor = allAnswered ? 'pointer' : 'not-allowed';
+    }
   }
 
   renderSecondReconstructionUI() {
@@ -728,9 +739,17 @@ export class Game {
         }
       });
     });
+
+    if (this.btnConfirmSecondTheory) {
+      const allAnswered = this.reconstructionSystem.isSecondAllAnswered();
+      this.btnConfirmSecondTheory.disabled = !allAnswered;
+      this.btnConfirmSecondTheory.style.opacity = allAnswered ? '1' : '0.4';
+      this.btnConfirmSecondTheory.style.cursor = allAnswered ? 'pointer' : 'not-allowed';
+    }
   }
 
   confirmTheorySelection() {
+    if (!this.reconstructionSystem.isAllAnswered()) return;
     this.reconstructionSystem.confirmTheory();
     this.toggleReconstructionModal(false);
     
@@ -745,6 +764,7 @@ export class Game {
   }
 
   confirmSecondTheorySelection() {
+    if (!this.reconstructionSystem.isSecondAllAnswered()) return;
     this.reconstructionSystem.confirmSecondTheory();
     this.toggleSecondReconstructionModal(false);
     

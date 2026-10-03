@@ -60,17 +60,17 @@ export class ReconstructionSystem {
     this.reset();
   }
 
-  reset(requiredClueThreshold = 3) {
-    this.requiredClueThreshold = requiredClueThreshold;
-    this.selectedChoices = {
-      entry: 'window',
-      struggle: 'ambush',
-      suspect: 'intruder'
-    };
-    this.secondSelectedChoices = {
-      revised_entry: 'self_erasure',
-      revised_suspect: 'compromised'
-    };
+  reset(caseData = null) {
+    if (caseData) {
+      this.requiredClueThreshold = caseData.requiredClues || 3;
+      if (caseData.questions) {
+        this.questions = caseData.questions;
+      }
+    } else {
+      this.requiredClueThreshold = 3;
+    }
+    this.selectedChoices = {};
+    this.secondSelectedChoices = {};
     this.isSubmitted = false;
     this.isSecondSubmitted = false;
     this.autoPromptTriggered = false;
@@ -89,6 +89,16 @@ export class ReconstructionSystem {
    */
   isSecondUnlocked(inkStepsCount, lostCount) {
     return inkStepsCount >= this.requiredInkStepsThreshold || lostCount > 0;
+  }
+
+  isAllAnswered() {
+    if (!this.questions || this.questions.length === 0) return true;
+    return this.questions.every(q => !!this.selectedChoices[q.id]);
+  }
+
+  isSecondAllAnswered() {
+    if (!this.secondQuestions || this.secondQuestions.length === 0) return true;
+    return this.secondQuestions.every(q => !!this.secondSelectedChoices[q.id]);
   }
 
   selectOption(questionId, optionId) {
@@ -110,25 +120,30 @@ export class ReconstructionSystem {
   }
 
   getSummary() {
-    const q1 = this.questions[0].options.find(o => o.id === this.selectedChoices.entry);
-    const q2 = this.questions[1].options.find(o => o.id === this.selectedChoices.struggle);
-    const q3 = this.questions[2].options.find(o => o.id === this.selectedChoices.suspect);
+    const answers = (this.questions || []).map(q => {
+      const opt = q.options.find(o => o.id === this.selectedChoices[q.id]);
+      return opt ? opt.label : '';
+    });
 
     return {
-      entry: q1 ? q1.label : '',
-      struggle: q2 ? q2.label : '',
-      suspect: q3 ? q3.label : '',
+      entry: answers[0] || '',
+      struggle: answers[1] || '',
+      suspect: answers[2] || '',
+      summaryText: answers.filter(Boolean).join(' | '),
       isSubmitted: this.isSubmitted
     };
   }
 
   getSecondSummary() {
-    const q1 = this.secondQuestions[0].options.find(o => o.id === this.secondSelectedChoices.revised_entry);
-    const q2 = this.secondQuestions[1].options.find(o => o.id === this.secondSelectedChoices.revised_suspect);
+    const answers = (this.secondQuestions || []).map(q => {
+      const opt = q.options.find(o => o.id === this.secondSelectedChoices[q.id]);
+      return opt ? opt.label : '';
+    });
 
     return {
-      revisedEntry: q1 ? q1.label : '',
-      revisedSuspect: q2 ? q2.label : '',
+      revisedEntry: answers[0] || '',
+      revisedSuspect: answers[1] || '',
+      summaryText: answers.filter(Boolean).join(' | '),
       isSecondSubmitted: this.isSecondSubmitted
     };
   }

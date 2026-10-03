@@ -11,6 +11,11 @@ export class LightSystem {
     this.maskCtx = null;
   }
 
+  setScale(scale = 1.0) {
+    this.headRadius = this.cellSize * 3.6 * scale;
+    this.trailRadius = this.cellSize * 2.4 * scale;
+  }
+
   /**
    * Check if a grid cell (col, row) is currently illuminated by the snake head or trail.
    * Reusable for future clue/evidence visibility queries.
