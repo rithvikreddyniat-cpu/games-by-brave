@@ -132,4 +132,20 @@ export class Game {
       this.setState(GAME_STATES.GAME_OVER);
     }
   }
+
+  /**
+   * Reusable Light System Query for pixel position.
+   * Allows future clue & evidence systems to check illumination.
+   */
+  isPositionIlluminated(x, y) {
+    return this.renderer.lightSystem.isPositionIlluminated(x, y, this.snake);
+  }
+
+  /**
+   * Reusable Light System Query for grid cell coordinates.
+   * Allows future clue & evidence systems to check grid illumination.
+   */
+  isCellIlluminated(col, row) {
+    return this.renderer.lightSystem.isCellIlluminated(col, row, this.snake);
+  }
 }

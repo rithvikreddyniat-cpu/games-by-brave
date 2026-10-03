@@ -1,5 +1,6 @@
 // Renderer Module for HTML5 Canvas
 import { CONFIG } from './config.js';
+import { LightSystem } from './lightSystem.js';
 
 export class Renderer {
   constructor(canvasElement) {
@@ -15,6 +16,9 @@ export class Renderer {
     this.height = this.rows * this.cellSize;
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+
+    // Initialize reusable Light System instance
+    this.lightSystem = new LightSystem(this.cellSize);
 
     this.resizeCanvas();
   }
@@ -34,6 +38,9 @@ export class Renderer {
     if (snake && (gameState === 'PLAYING' || gameState === 'GAME_OVER')) {
       this.drawSnake(snake);
     }
+
+    // Apply Dynamic Light & Darkness System
+    this.lightSystem.render(this.ctx, this.width, this.height, snake);
     
     this.drawComicBorder();
   }
