@@ -214,80 +214,71 @@ export class Game {
     }
   }
 
+  showScreen(targetId) {
+    const screens = [
+      { id: 'screen-title', el: this.screenTitle },
+      { id: 'screen-case-intro', el: this.screenCaseIntro },
+      { id: 'screen-case-solved', el: this.screenCaseSolved },
+      { id: 'screen-twist', el: this.screenTwist },
+      { id: 'screen-revelation', el: this.screenRevelation },
+      { id: 'screen-game-over', el: this.screenGameOver }
+    ];
+
+    screens.forEach(({ id, el }) => {
+      if (!el) return;
+      if (id === targetId) {
+        el.classList.remove('hidden');
+        el.classList.add('active');
+      } else {
+        el.classList.add('hidden');
+        el.classList.remove('active');
+      }
+    });
+  }
+
   setState(newState) {
     this.state = newState;
     const currentCase = CASES[this.currentCaseIndex];
 
     switch (newState) {
       case GAME_STATES.TITLE:
-        if (this.screenTitle) {
-          this.screenTitle.classList.remove('hidden');
-          this.screenTitle.classList.add('active');
-        }
-        if (this.screenGameOver) {
-          this.screenGameOver.classList.add('hidden');
-          this.screenGameOver.classList.remove('active');
-        }
-        if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-        if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-        if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
+        this.showScreen('screen-title');
         if (this.hudStatus) this.hudStatus.textContent = 'STANDBY';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE ALLEY';
         break;
 
+      case GAME_STATES.CASE_INTRO:
+        this.showScreen('screen-case-intro');
+        if (this.hudStatus) this.hudStatus.textContent = 'CASE BRIEFING';
+        if (this.panelTag && currentCase) this.panelTag.textContent = currentCase.panelTag;
+        break;
+
       case GAME_STATES.PLAYING:
-        if (this.screenTitle) {
-          this.screenTitle.classList.add('hidden');
-          this.screenTitle.classList.remove('active');
-        }
-        if (this.screenGameOver) {
-          this.screenGameOver.classList.add('hidden');
-          this.screenGameOver.classList.remove('active');
-        }
-        if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-        if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-        if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
+        this.showScreen(null);
         if (this.hudStatus) this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
         if (this.panelTag && currentCase) this.panelTag.textContent = currentCase.panelTag;
         break;
 
+      case GAME_STATES.CASE_SOLVED:
+        this.showScreen('screen-case-solved');
+        if (this.hudStatus) this.hudStatus.textContent = 'CASE SOLVED';
+        if (this.panelTag && currentCase) this.panelTag.textContent = currentCase.panelTag;
+        break;
+
       case GAME_STATES.INK_PHASE:
-        if (this.screenTitle) this.screenTitle.classList.add('hidden');
-        if (this.screenGameOver) this.screenGameOver.classList.add('hidden');
-        if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-        if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-        if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
+        this.showScreen(null);
         if (this.hudStatus) this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVERSAL';
         break;
 
       case GAME_STATES.REVELATION:
-        if (this.screenTitle) this.screenTitle.classList.add('hidden');
-        if (this.screenGameOver) this.screenGameOver.classList.add('hidden');
-        if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-        if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-        if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        if (this.screenRevelation) {
-          this.screenRevelation.classList.remove('hidden');
-          this.screenRevelation.classList.add('active');
-        }
+        this.showScreen('screen-revelation');
         if (this.hudStatus) this.hudStatus.textContent = 'CASE REVEALED';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVELATION';
         break;
 
       case GAME_STATES.GAME_OVER:
-        if (this.screenGameOver) {
-          this.screenGameOver.classList.remove('hidden');
-          this.screenGameOver.classList.add('active');
-        }
-        if (this.screenTitle) this.screenTitle.classList.add('hidden');
-        if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-        if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-        if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
+        this.showScreen('screen-game-over');
         if (this.hudStatus) this.hudStatus.textContent = 'CASE CLOSED';
         
         const stats = this.clueSystem.getStats();
@@ -320,24 +311,13 @@ export class Game {
     this.currentCaseIndex = caseIndex;
     const c = CASES[caseIndex];
 
-    if (this.screenTitle) this.screenTitle.classList.add('hidden');
-    if (this.screenGameOver) this.screenGameOver.classList.add('hidden');
-    if (this.screenTwist) this.screenTwist.classList.add('hidden');
-    if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-    if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-
     if (this.caseIntroTag) this.caseIntroTag.textContent = c.panelTag;
     if (this.caseIntroTitle) this.caseIntroTitle.textContent = c.title;
     if (this.caseIntroNarration) this.caseIntroNarration.textContent = `"${c.intro}"`;
 
-    if (this.screenCaseIntro) {
-      this.screenCaseIntro.classList.remove('hidden');
-      this.screenCaseIntro.classList.add('active');
-    }
-
     if (this.panelTag) this.panelTag.textContent = c.panelTag;
-    if (this.hudStatus) this.hudStatus.textContent = 'CASE BRIEFING';
     this.updateHUDClues();
+    this.setState(GAME_STATES.CASE_INTRO);
   }
 
   startCase(caseIndex) {
@@ -360,13 +340,6 @@ export class Game {
     this.toggleReconstructionModal(false);
     this.toggleSecondReconstructionModal(false);
 
-    if (this.screenCaseIntro) this.screenCaseIntro.classList.add('hidden');
-    if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
-    if (this.screenTitle) this.screenTitle.classList.add('hidden');
-    if (this.screenGameOver) this.screenGameOver.classList.add('hidden');
-    if (this.screenTwist) this.screenTwist.classList.add('hidden');
-    if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-
     if (this.btnOpenReconstruct) {
       this.btnOpenReconstruct.classList.add('hidden');
     }
@@ -380,7 +353,6 @@ export class Game {
   }
 
   nextCase() {
-    if (this.screenCaseSolved) this.screenCaseSolved.classList.add('hidden');
     this.currentCaseIndex++;
     if (this.currentCaseIndex < CASES.length) {
       this.showCaseIntro(this.currentCaseIndex);
@@ -397,10 +369,7 @@ export class Game {
     if (this.caseSolvedNarration) {
       this.caseSolvedNarration.textContent = `"Case #${this.currentCaseIndex + 1} solved! You collected all required evidence and reconstructed the timeline."`;
     }
-    if (this.screenCaseSolved) {
-      this.screenCaseSolved.classList.remove('hidden');
-      this.screenCaseSolved.classList.add('active');
-    }
+    this.setState(GAME_STATES.CASE_SOLVED);
   }
 
   startLoop() {
@@ -768,12 +737,7 @@ export class Game {
     const currentCase = CASES[this.currentCaseIndex];
     if (currentCase && currentCase.hasTwist) {
       // M5 Trigger Rule Reversal Twist Interruption! (Case 3)
-      if (this.screenTwist) {
-        this.screenTwist.classList.remove('hidden');
-        this.screenTwist.classList.add('active');
-      } else {
-        this.acceptTwist();
-      }
+      this.showScreen('screen-twist');
     } else {
       // Cases 1 & 2: Show Case Solved card
       this.showCaseSolved();
@@ -826,13 +790,7 @@ export class Game {
   }
 
   acceptTwist() {
-    if (this.screenTwist) {
-      this.screenTwist.classList.add('hidden');
-      this.screenTwist.classList.remove('active');
-    }
-    if (this.state === GAME_STATES.PLAYING) {
-      this.setState(GAME_STATES.INK_PHASE);
-    }
+    this.setState(GAME_STATES.INK_PHASE);
   }
 
   updateHUDClues() {
