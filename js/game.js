@@ -56,6 +56,18 @@ export class Game {
     this.secondReconstructQuestions = document.getElementById('second-reconstruct-questions');
     this.btnConfirmSecondTheory = document.getElementById('btn-confirm-second-theory');
 
+    // M7 Final Comic Revelation DOM Elements
+    this.screenRevelation = document.getElementById('screen-revelation');
+    this.btnNextPanel = document.getElementById('btn-next-panel');
+    this.btnPlayAgain = document.getElementById('btn-play-again');
+    this.revSlides = [
+      document.getElementById('rev-panel-1'),
+      document.getElementById('rev-panel-2'),
+      document.getElementById('rev-panel-3'),
+      document.getElementById('rev-panel-4')
+    ];
+    this.currentRevSlide = 0;
+
     // Modules
     this.renderer = new Renderer(this.canvas);
     this.snake = new Snake(CONFIG.GRID_COLS, CONFIG.GRID_ROWS);
@@ -109,9 +121,24 @@ export class Game {
       this.btnAcceptTwist.addEventListener('click', () => this.acceptTwist());
     }
 
+    // M7 Revelation Sequence controls
+    if (this.btnNextPanel) {
+      this.btnNextPanel.addEventListener('click', () => this.nextRevelationPanel());
+    }
+    if (this.btnPlayAgain) {
+      this.btnPlayAgain.addEventListener('click', () => this.startGame());
+    }
+
     // Keyboard listener for shortcuts
     window.addEventListener('keydown', (e) => {
-      if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
+      if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        if (this.currentRevSlide < this.revSlides.length - 1) {
+          this.nextRevelationPanel();
+        } else {
+          this.startGame();
+        }
+      } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
         this.acceptTwist();
       } else if (e.code === 'KeyC') {
@@ -158,6 +185,7 @@ export class Game {
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
         this.hudStatus.textContent = 'STANDBY';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
         break;
@@ -168,6 +196,7 @@ export class Game {
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
         this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
         break;
@@ -178,8 +207,21 @@ export class Game {
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
         this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #02: THE REVERSAL';
+        break;
+
+      case GAME_STATES.REVELATION:
+        this.screenTitle.classList.add('hidden');
+        this.screenGameOver.classList.add('hidden');
+        if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        if (this.screenRevelation) {
+          this.screenRevelation.classList.remove('hidden');
+          this.screenRevelation.classList.add('active');
+        }
+        this.hudStatus.textContent = 'CASE REVEALED';
+        if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVELATION';
         break;
 
       case GAME_STATES.GAME_OVER:
@@ -188,6 +230,7 @@ export class Game {
         this.screenTitle.classList.add('hidden');
         this.screenTitle.classList.remove('active');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
         this.hudStatus.textContent = 'CASE CLOSED';
         
         const stats = this.clueSystem.getStats();
@@ -219,12 +262,18 @@ export class Game {
     this.inputHandler.reset();
     this.accumulator = 0;
     this.inkStepsCount = 0;
+    this.currentRevSlide = 0;
 
     this.dismissToast();
     this.toggleCaseBoard(false);
     this.toggleReconstructionModal(false);
     this.toggleSecondReconstructionModal(false);
     
+    if (this.screenRevelation) {
+      this.screenRevelation.classList.add('hidden');
+      this.screenRevelation.classList.remove('active');
+    }
+
     if (this.btnOpenReconstruct) {
       this.btnOpenReconstruct.classList.add('hidden');
     }
@@ -540,8 +589,46 @@ export class Game {
   confirmSecondTheorySelection() {
     this.reconstructionSystem.confirmSecondTheory();
     this.toggleSecondReconstructionModal(false);
-    this.hudStatus.textContent = 'RECONSTRUCTION COMPLETE';
-    this.updateCaseBoardUI();
+    
+    // M7 Trigger Final Comic Revelation Sequence!
+    this.startRevelationSequence();
+  }
+
+  startRevelationSequence() {
+    this.currentRevSlide = 0;
+    this.updateRevelationSlideUI();
+    this.setState(GAME_STATES.REVELATION);
+  }
+
+  nextRevelationPanel() {
+    if (this.currentRevSlide < this.revSlides.length - 1) {
+      this.currentRevSlide++;
+      this.updateRevelationSlideUI();
+    } else {
+      this.startGame();
+    }
+  }
+
+  updateRevelationSlideUI() {
+    this.revSlides.forEach((slide, index) => {
+      if (slide) {
+        if (index === this.currentRevSlide) {
+          slide.classList.remove('hidden');
+          slide.classList.add('active');
+        } else {
+          slide.classList.add('hidden');
+          slide.classList.remove('active');
+        }
+      }
+    });
+
+    if (this.btnNextPanel) {
+      if (this.currentRevSlide >= this.revSlides.length - 1) {
+        this.btnNextPanel.classList.add('hidden');
+      } else {
+        this.btnNextPanel.classList.remove('hidden');
+      }
+    }
   }
 
   acceptTwist() {
