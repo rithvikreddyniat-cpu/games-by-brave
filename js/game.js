@@ -79,6 +79,7 @@ export class Game {
     this.lastFrameTime = 0;
     this.accumulator = 0;
     this.inkStepsCount = 0;
+    this.deathWasInkPhase = false;
 
     this.initEventListeners();
     this.setState(GAME_STATES.TITLE);
@@ -289,6 +290,7 @@ export class Game {
     this.accumulator = 0;
     this.inkStepsCount = 0;
     this.currentRevSlide = 0;
+    this.deathWasInkPhase = false;
 
     this.dismissToast();
     this.toggleCaseBoard(false);
@@ -340,7 +342,7 @@ export class Game {
       }
 
       // Render frame
-      this.renderer.render(this.snake, this.renderer.lightSystem, this.clueSystem, this.state);
+      this.renderer.render(this.snake, this.renderer.lightSystem, this.clueSystem, this.state, this.deathWasInkPhase);
     } catch (err) {
       console.error(err);
     } finally {
@@ -368,40 +370,50 @@ export class Game {
 
       // Check evidence ink erasure
       const res = this.clueSystem.update(this.snake, null, true);
+      const stats = this.clueSystem.getStats();
+      const willSecondAutoOpen = this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost) && !this.reconstructionSystem.secondAutoPromptTriggered;
+
       if (res && res.type === 'ERASED') {
-        this.showToast(res.clue, true);
+        if (!willSecondAutoOpen) {
+          this.showToast(res.clue, true);
+        }
         this.updateHUDClues();
       }
 
       // M6 Second Reconstruction Trigger Check
-      const stats = this.clueSystem.getStats();
       if (this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
         if (this.btnOpenReconstruct) {
           this.btnOpenReconstruct.classList.remove('hidden');
         }
         if (!this.reconstructionSystem.secondAutoPromptTriggered) {
           this.reconstructionSystem.secondAutoPromptTriggered = true;
+          this.dismissToast();
           this.toggleSecondReconstructionModal(true);
         }
       }
     } else {
       // Light phase discovery/collection
       const res = this.clueSystem.update(this.snake, this.renderer.lightSystem, false);
+      const stats = this.clueSystem.getStats();
+      const willAutoOpen = this.reconstructionSystem.isUnlocked(stats.collected) && !this.reconstructionSystem.autoPromptTriggered;
+
       if (res && res.type === 'COLLECTED') {
-        this.showToast(res.clue, false);
+        if (!willAutoOpen) {
+          this.showToast(res.clue, false);
+        }
         this.updateHUDClues();
       } else {
         this.updateHUDClues();
       }
 
       // M4 Reconstruction Trigger Check
-      const stats = this.clueSystem.getStats();
       if (this.reconstructionSystem.isUnlocked(stats.collected)) {
         if (this.btnOpenReconstruct) {
           this.btnOpenReconstruct.classList.remove('hidden');
         }
         if (!this.reconstructionSystem.autoPromptTriggered) {
           this.reconstructionSystem.autoPromptTriggered = true;
+          this.dismissToast();
           this.toggleReconstructionModal(true);
         }
       }
@@ -410,6 +422,9 @@ export class Game {
     // Check collisions
     if (this.snake.checkWallCollision() || this.snake.checkSelfCollision()) {
       this.snake.isDead = true;
+      if (this.state === GAME_STATES.INK_PHASE) {
+        this.deathWasInkPhase = true;
+      }
       this.setState(GAME_STATES.GAME_OVER);
     }
   }
@@ -417,6 +432,10 @@ export class Game {
   showComicImpact(text) {
     const frame = document.getElementById('panel-frame');
     if (!frame) return;
+
+    // Remove any existing impact popups so only one exists at a time
+    const existingPopups = frame.querySelectorAll('.action-impact-popup');
+    existingPopups.forEach(p => p.remove());
 
     const popup = document.createElement('div');
     popup.className = 'action-impact-popup';

@@ -39,9 +39,9 @@ export class Renderer {
   /**
    * Main render method called every frame
    */
-  render(snake, lightSystem, clueSystem, gameState) {
+  render(snake, lightSystem, clueSystem, gameState, deathWasInkPhase = false) {
     if (!this.ctx) return;
-    const isInkPhase = (gameState === GAME_STATES.INK_PHASE);
+    const isInkPhase = (gameState === GAME_STATES.INK_PHASE) || (gameState === GAME_STATES.GAME_OVER && deathWasInkPhase);
 
     if (isInkPhase) {
       // --- INK PHASE: White Paper Environment & Persistent Ink Trails ---

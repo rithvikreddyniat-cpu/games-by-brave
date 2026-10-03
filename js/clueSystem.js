@@ -153,7 +153,7 @@ export class ClueSystem {
         ctx.strokeRect(x + pad, y + pad, size, size);
 
         ctx.fillStyle = '#f5f3eb';
-        ctx.font = `bold ${Math.floor(cellSize * 0.45)}px var(--font-headline), monospace`;
+        ctx.font = `${Math.floor(cellSize * 0.5)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(clue.icon, x + cellSize / 2, y + cellSize / 2);
@@ -177,7 +177,7 @@ export class ClueSystem {
           ctx.strokeRect(x + pad, y + pad, size, size);
 
           ctx.fillStyle = '#08080a';
-          ctx.font = `bold ${Math.floor(cellSize * 0.55)}px var(--font-headline), monospace`;
+          ctx.font = `bold ${Math.floor(cellSize * 0.6)}px "Courier New", monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('?', x + cellSize / 2, y + cellSize / 2 + 1);
