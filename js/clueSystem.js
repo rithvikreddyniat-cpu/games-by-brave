@@ -1,4 +1,4 @@
-// Clue System Module for Investigation Mechanics
+// Clue System Module for Investigation Mechanics & Ink Erasure
 export class ClueSystem {
   constructor(cols = 20, rows = 20) {
     this.cols = cols;
@@ -56,87 +56,132 @@ export class ClueSystem {
     this.clues = this.initialClues.map(c => ({
       ...c,
       isDiscovered: false,
-      isCollected: false
+      isCollected: false,
+      isLost: false
     }));
   }
 
   /**
-   * Update discovery and collection state based on snake position and light system
+   * Update discovery, collection, and ink erasure state based on game phase
    * @param {Object} snake - Snake instance
    * @param {Object} lightSystem - LightSystem instance
-   * @returns {Object|null} Returns newly collected clue object if collected this step
+   * @param {boolean} isInkPhase - Whether the game is in INK_PHASE rule reversal
+   * @returns {Object|null} Returns object with { type: 'COLLECTED'|'ERASED', clue } if triggered this step
    */
-  update(snake, lightSystem) {
-    if (!snake || !snake.head || !lightSystem) return null;
+  update(snake, lightSystem, isInkPhase = false) {
+    if (!snake || !snake.head) return null;
 
-    let newlyCollected = null;
+    let result = null;
 
     for (const clue of this.clues) {
-      if (clue.isCollected) continue;
-
-      // 1. Check if illuminated by light system
-      if (!clue.isDiscovered) {
-        if (lightSystem.isCellIlluminated(clue.col, clue.row, snake)) {
-          clue.isDiscovered = true;
+      if (isInkPhase) {
+        // --- INK PHASE: Movement -> Dark Ink -> Evidence Erased ---
+        if (!clue.isLost && snake.head.x === clue.col && snake.head.y === clue.row) {
+          clue.isLost = true;
+          result = { type: 'ERASED', clue };
         }
-      }
+      } else {
+        // --- LIGHT PHASE: Movement -> Light -> Evidence Discovered/Collected ---
+        if (clue.isCollected) continue;
 
-      // 2. Check if Snake head steps on clue cell
-      if (snake.head.x === clue.col && snake.head.y === clue.row) {
-        clue.isCollected = true;
-        clue.isDiscovered = true;
-        newlyCollected = clue;
+        // 1. Check if illuminated by light system
+        if (!clue.isDiscovered && lightSystem) {
+          if (lightSystem.isCellIlluminated(clue.col, clue.row, snake)) {
+            clue.isDiscovered = true;
+          }
+        }
+
+        // 2. Check if Snake head steps on clue cell
+        if (snake.head.x === clue.col && snake.head.y === clue.row) {
+          clue.isCollected = true;
+          clue.isDiscovered = true;
+          result = { type: 'COLLECTED', clue };
+        }
       }
     }
 
-    return newlyCollected;
+    return result;
   }
 
   getStats() {
     const total = this.clues.length;
-    const collected = this.clues.filter(c => c.isCollected).length;
-    const discovered = this.clues.filter(c => c.isDiscovered).length;
+    const collected = this.clues.filter(c => c.isCollected && !c.isLost).length;
+    const discovered = this.clues.filter(c => c.isDiscovered && !c.isLost).length;
+    const lost = this.clues.filter(c => c.isLost).length;
 
-    return { total, collected, discovered };
+    return { total, collected, discovered, lost };
   }
 
   /**
-   * Render revealed clues onto the canvas
+   * Render revealed / erased clues onto the canvas
    */
-  render(ctx, cellSize) {
+  render(ctx, cellSize, isInkPhase = false) {
     ctx.save();
 
     for (const clue of this.clues) {
-      // Only render if discovered (illuminated or collected)
-      if (!clue.isDiscovered && !clue.isCollected) continue;
-
       const x = clue.col * cellSize;
       const y = clue.row * cellSize;
       const pad = 3;
       const size = cellSize - pad * 2;
 
-      if (clue.isCollected) {
-        // Collected clue marker (subtle pulse ring / check mark)
-        ctx.strokeStyle = 'rgba(245, 243, 235, 0.4)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(x + pad, y + pad, size, size);
-        ctx.setLineDash([]);
-      } else {
-        // Uncollected revealed clue (glowing noir evidence marker)
-        ctx.fillStyle = '#f5f3eb';
+      if (clue.isLost) {
+        // Erased Ink Clue Marker (Red/Black slashed evidence marker)
+        ctx.fillStyle = '#08080a';
         ctx.fillRect(x + pad, y + pad, size, size);
 
-        ctx.strokeStyle = '#08080a';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#f5f3eb';
+        ctx.lineWidth = 2;
         ctx.strokeRect(x + pad, y + pad, size, size);
 
-        // Evidence marker badge symbol
+        // Crossed-out X symbol
+        ctx.strokeStyle = '#d32f2f';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + pad + 4, y + pad + 4);
+        ctx.lineTo(x + pad + size - 4, y + pad + size - 4);
+        ctx.moveTo(x + pad + size - 4, y + pad + 4);
+        ctx.lineTo(x + pad + 4, y + pad + size - 4);
+        ctx.stroke();
+
+      } else if (isInkPhase) {
+        // In INK PHASE, all non-erased clues are visible on the paper white map
         ctx.fillStyle = '#08080a';
-        ctx.font = `bold ${Math.floor(cellSize * 0.55)}px var(--font-headline), monospace`;
+        ctx.fillRect(x + pad, y + pad, size, size);
+
+        ctx.strokeStyle = '#f5f3eb';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + pad, y + pad, size, size);
+
+        ctx.fillStyle = '#f5f3eb';
+        ctx.font = `bold ${Math.floor(cellSize * 0.45)}px var(--font-headline), monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('?', x + cellSize / 2, y + cellSize / 2 + 1);
+        ctx.fillText(clue.icon, x + cellSize / 2, y + cellSize / 2);
+
+      } else {
+        // LIGHT PHASE rendering
+        if (!clue.isDiscovered && !clue.isCollected) continue;
+
+        if (clue.isCollected) {
+          ctx.strokeStyle = 'rgba(245, 243, 235, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(x + pad, y + pad, size, size);
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillStyle = '#f5f3eb';
+          ctx.fillRect(x + pad, y + pad, size, size);
+
+          ctx.strokeStyle = '#08080a';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x + pad, y + pad, size, size);
+
+          ctx.fillStyle = '#08080a';
+          ctx.font = `bold ${Math.floor(cellSize * 0.55)}px var(--font-headline), monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('?', x + cellSize / 2, y + cellSize / 2 + 1);
+        }
       }
     }
 

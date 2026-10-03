@@ -1,6 +1,7 @@
 // Renderer Module for HTML5 Canvas
-import { CONFIG } from './config.js';
+import { CONFIG, GAME_STATES } from './config.js';
 import { LightSystem } from './lightSystem.js';
+import { InkSystem } from './inkSystem.js';
 
 export class Renderer {
   constructor(canvasElement) {
@@ -17,8 +18,9 @@ export class Renderer {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
 
-    // Initialize reusable Light System instance
+    // Initialize reusable Light System and Ink System instances
     this.lightSystem = new LightSystem(this.cellSize);
+    this.inkSystem = new InkSystem(this.cols, this.rows, this.cellSize);
 
     this.resizeCanvas();
   }
@@ -32,21 +34,36 @@ export class Renderer {
    * Main render method called every frame
    */
   render(snake, lightSystem, clueSystem, gameState) {
-    this.clear();
-    this.drawGrid();
+    const isInkPhase = (gameState === GAME_STATES.INK_PHASE);
 
-    // Render Discovered & Collected Clues
-    if (clueSystem) {
-      clueSystem.render(this.ctx, this.cellSize);
-    }
-    
-    if (snake && (gameState === 'PLAYING' || gameState === 'GAME_OVER')) {
-      this.drawSnake(snake);
+    if (isInkPhase) {
+      // --- INK PHASE: White Paper Environment & Persistent Ink Trails ---
+      this.inkSystem.render(this.ctx, this.width, this.height);
+
+      if (clueSystem) {
+        clueSystem.render(this.ctx, this.cellSize, true);
+      }
+
+      if (snake) {
+        this.drawSnake(snake, true);
+      }
+    } else {
+      // --- LIGHT PHASE: Pitch Darkness & Moving Light Pools ---
+      this.clear();
+      this.drawGrid();
+
+      if (clueSystem) {
+        clueSystem.render(this.ctx, this.cellSize, false);
+      }
+      
+      if (snake && (gameState === GAME_STATES.PLAYING || gameState === GAME_STATES.GAME_OVER)) {
+        this.drawSnake(snake, false);
+      }
+
+      // Apply Dynamic Light & Darkness System
+      this.lightSystem.render(this.ctx, this.width, this.height, snake);
     }
 
-    // Apply Dynamic Light & Darkness System
-    this.lightSystem.render(this.ctx, this.width, this.height, snake);
-    
     this.drawComicBorder();
   }
 
@@ -79,7 +96,7 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  drawSnake(snake) {
+  drawSnake(snake, isInkPhase = false) {
     const { body, direction, isDead } = snake;
 
     this.ctx.save();
@@ -93,11 +110,15 @@ export class Renderer {
       const size = this.cellSize - pad * 2;
 
       // Body background fill
-      this.ctx.fillStyle = isDead ? CONFIG.COLORS.INK_LIGHT || '#525260' : CONFIG.COLORS.SNAKE_BODY;
+      if (isInkPhase) {
+        this.ctx.fillStyle = '#08080a';
+      } else {
+        this.ctx.fillStyle = isDead ? CONFIG.COLORS.INK_LIGHT || '#525260' : CONFIG.COLORS.SNAKE_BODY;
+      }
       this.ctx.fillRect(x + pad, y + pad, size, size);
 
       // Body border outline for comic feel
-      this.ctx.strokeStyle = CONFIG.COLORS.SNAKE_OUTLINE;
+      this.ctx.strokeStyle = isInkPhase ? '#f5f3eb' : CONFIG.COLORS.SNAKE_OUTLINE;
       this.ctx.lineWidth = 2;
       this.ctx.strokeRect(x + pad, y + pad, size, size);
     }
@@ -105,7 +126,6 @@ export class Renderer {
     // 2. Draw Snake Head (Detective Motif)
     if (body.length > 0) {
       const head = body[0];
-      // Clamp coordinates for dead head if wall collision occurred
       const clampedX = Math.max(0, Math.min(head.x, this.cols - 1));
       const clampedY = Math.max(0, Math.min(head.y, this.rows - 1));
 
@@ -114,28 +134,31 @@ export class Renderer {
       const pad = 1;
       const hSize = this.cellSize - pad * 2;
 
-      // Head Base Fill (Paper White)
-      this.ctx.fillStyle = isDead ? '#888888' : CONFIG.COLORS.SNAKE_HEAD;
+      // Head Base Fill
+      if (isInkPhase) {
+        this.ctx.fillStyle = '#08080a';
+      } else {
+        this.ctx.fillStyle = isDead ? '#888888' : CONFIG.COLORS.SNAKE_HEAD;
+      }
       this.ctx.fillRect(hX + pad, hY + pad, hSize, hSize);
 
       // Heavy Ink Border
-      this.ctx.strokeStyle = CONFIG.COLORS.SNAKE_OUTLINE;
+      this.ctx.strokeStyle = isInkPhase ? '#f5f3eb' : CONFIG.COLORS.SNAKE_OUTLINE;
       this.ctx.lineWidth = 3;
       this.ctx.strokeRect(hX + pad, hY + pad, hSize, hSize);
 
-      // Detective Eye / Visor detail based on direction
-      this.drawHeadDetails(hX, hY, hSize, direction, isDead);
+      // Detective Eye / Visor detail
+      this.drawHeadDetails(hX, hY, hSize, direction, isDead, isInkPhase);
     }
 
     this.ctx.restore();
   }
 
-  drawHeadDetails(x, y, size, direction, isDead) {
-    this.ctx.fillStyle = CONFIG.COLORS.SNAKE_EYE;
+  drawHeadDetails(x, y, size, direction, isDead, isInkPhase = false) {
+    this.ctx.fillStyle = isInkPhase ? '#f5f3eb' : CONFIG.COLORS.SNAKE_EYE;
 
     if (isDead) {
-      // Draw 'X X' dead eyes
-      this.ctx.strokeStyle = CONFIG.COLORS.SNAKE_EYE;
+      this.ctx.strokeStyle = isInkPhase ? '#f5f3eb' : CONFIG.COLORS.SNAKE_EYE;
       this.ctx.lineWidth = 2;
       
       const eye1X = x + size * 0.3;
@@ -143,11 +166,9 @@ export class Renderer {
       const eyeY = y + size * 0.5;
       const r = 4;
 
-      // Eye 1
       this.ctx.beginPath();
       this.ctx.moveTo(eye1X - r, eyeY - r); this.ctx.lineTo(eye1X + r, eyeY + r);
       this.ctx.moveTo(eye1X + r, eyeY - r); this.ctx.lineTo(eye1X - r, eyeY + r);
-      // Eye 2
       this.ctx.moveTo(eye2X - r, eyeY - r); this.ctx.lineTo(eye2X + r, eyeY + r);
       this.ctx.moveTo(eye2X + r, eyeY - r); this.ctx.lineTo(eye2X - r, eyeY + r);
       this.ctx.stroke();

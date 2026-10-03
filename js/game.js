@@ -12,6 +12,7 @@ export class Game {
 
     // DOM Elements
     this.canvas = document.getElementById('game-canvas');
+    this.panelTag = document.getElementById('panel-tag');
     this.screenTitle = document.getElementById('screen-title');
     this.screenGameOver = document.getElementById('screen-game-over');
     this.btnStart = document.getElementById('btn-start');
@@ -21,6 +22,7 @@ export class Game {
 
     // M3 Evidence & Case Board DOM Elements
     this.evidenceToast = document.getElementById('evidence-toast');
+    this.toastBadge = document.getElementById('toast-badge');
     this.toastTitle = document.getElementById('toast-title');
     this.toastDesc = document.getElementById('toast-desc');
     this.btnToastDismiss = document.getElementById('btn-toast-dismiss');
@@ -43,6 +45,10 @@ export class Game {
     this.caseboardTheoryText = document.getElementById('caseboard-theory-text');
     this.finalTheoryBox = document.getElementById('final-theory-box');
     this.finalTheoryText = document.getElementById('final-theory-text');
+
+    // M5 Rule Reversal Twist DOM Elements
+    this.screenTwist = document.getElementById('screen-twist');
+    this.btnAcceptTwist = document.getElementById('btn-accept-twist');
 
     // Modules
     this.renderer = new Renderer(this.canvas);
@@ -82,9 +88,17 @@ export class Game {
       this.btnConfirmTheory.addEventListener('click', () => this.confirmTheorySelection());
     }
 
+    // M5 Twist Interruption Modal controls
+    if (this.btnAcceptTwist) {
+      this.btnAcceptTwist.addEventListener('click', () => this.acceptTwist());
+    }
+
     // Keyboard listener for shortcuts [KeyC] Caseboard, [KeyR] Reconstruct, [Space/Enter] Actions
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'KeyC') {
+      if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        this.acceptTwist();
+      } else if (e.code === 'KeyC') {
         e.preventDefault();
         this.toggleCaseBoard();
       } else if (e.code === 'KeyR') {
@@ -123,7 +137,9 @@ export class Game {
         this.screenTitle.classList.add('active');
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
+        if (this.screenTwist) this.screenTwist.classList.add('hidden');
         this.hudStatus.textContent = 'STANDBY';
+        if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
         break;
 
       case GAME_STATES.PLAYING:
@@ -131,7 +147,19 @@ export class Game {
         this.screenTitle.classList.remove('active');
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
+        if (this.screenTwist) this.screenTwist.classList.add('hidden');
         this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
+        if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
+        break;
+
+      case GAME_STATES.INK_PHASE:
+        this.screenTitle.classList.add('hidden');
+        this.screenTitle.classList.remove('active');
+        this.screenGameOver.classList.add('hidden');
+        this.screenGameOver.classList.remove('active');
+        if (this.screenTwist) this.screenTwist.classList.add('hidden');
+        this.hudStatus.textContent = 'INK ERASURE';
+        if (this.panelTag) this.panelTag.textContent = 'PANEL #02: THE REVERSAL';
         break;
 
       case GAME_STATES.GAME_OVER:
@@ -139,6 +167,7 @@ export class Game {
         this.screenGameOver.classList.add('active');
         this.screenTitle.classList.add('hidden');
         this.screenTitle.classList.remove('active');
+        if (this.screenTwist) this.screenTwist.classList.add('hidden');
         this.hudStatus.textContent = 'CASE CLOSED';
         
         const stats = this.clueSystem.getStats();
@@ -162,6 +191,7 @@ export class Game {
     this.snake.reset();
     this.clueSystem.reset();
     this.reconstructionSystem.reset();
+    this.renderer.inkSystem.reset();
     this.inputHandler.reset();
     this.accumulator = 0;
 
@@ -190,7 +220,7 @@ export class Game {
     const deltaTime = timestamp - this.lastFrameTime;
     this.lastFrameTime = timestamp;
 
-    if (this.state === GAME_STATES.PLAYING) {
+    if (this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) {
       this.accumulator += deltaTime;
 
       // Update grid step when accumulator reaches tick interval
@@ -216,24 +246,38 @@ export class Game {
     // Update HUD steps
     this.hudSteps.textContent = this.snake.stepsCount;
 
-    // Check & update clue discovery/collection
-    const newlyCollected = this.clueSystem.update(this.snake, this.renderer.lightSystem);
-    if (newlyCollected) {
-      this.showToast(newlyCollected);
-      this.updateHUDClues();
-    } else {
-      this.updateHUDClues();
-    }
+    const isInkPhase = (this.state === GAME_STATES.INK_PHASE);
 
-    // M4 Reconstruction Trigger Check
-    const stats = this.clueSystem.getStats();
-    if (this.reconstructionSystem.isUnlocked(stats.collected)) {
-      if (this.btnOpenReconstruct) {
-        this.btnOpenReconstruct.classList.remove('hidden');
+    if (isInkPhase) {
+      // Deposit persistent dark ink onto current snake positions
+      this.renderer.inkSystem.depositInk(this.snake);
+
+      // Check evidence ink erasure
+      const res = this.clueSystem.update(this.snake, null, true);
+      if (res && res.type === 'ERASED') {
+        this.showToast(res.clue, true);
+        this.updateHUDClues();
       }
-      if (!this.reconstructionSystem.autoPromptTriggered) {
-        this.reconstructionSystem.autoPromptTriggered = true;
-        this.toggleReconstructionModal(true);
+    } else {
+      // Light phase discovery/collection
+      const res = this.clueSystem.update(this.snake, this.renderer.lightSystem, false);
+      if (res && res.type === 'COLLECTED') {
+        this.showToast(res.clue, false);
+        this.updateHUDClues();
+      } else {
+        this.updateHUDClues();
+      }
+
+      // M4 Reconstruction Trigger Check
+      const stats = this.clueSystem.getStats();
+      if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+        if (this.btnOpenReconstruct) {
+          this.btnOpenReconstruct.classList.remove('hidden');
+        }
+        if (!this.reconstructionSystem.autoPromptTriggered) {
+          this.reconstructionSystem.autoPromptTriggered = true;
+          this.toggleReconstructionModal(true);
+        }
       }
     }
 
@@ -244,10 +288,23 @@ export class Game {
     }
   }
 
-  showToast(clue) {
+  showToast(clue, isErased = false) {
     if (!this.evidenceToast) return;
-    this.toastTitle.textContent = clue.name.toUpperCase();
-    this.toastDesc.textContent = `"${clue.description}"`;
+    if (isErased) {
+      if (this.toastBadge) {
+        this.toastBadge.textContent = 'EVIDENCE ERASED';
+        this.toastBadge.className = 'toast-badge erased';
+      }
+      this.toastTitle.textContent = clue.name.toUpperCase();
+      this.toastDesc.textContent = `"Dark ink covers ${clue.name}. The evidence has been erased!"`;
+    } else {
+      if (this.toastBadge) {
+        this.toastBadge.textContent = 'EVIDENCE FOUND';
+        this.toastBadge.className = 'toast-badge';
+      }
+      this.toastTitle.textContent = clue.name.toUpperCase();
+      this.toastDesc.textContent = `"${clue.description}"`;
+    }
     this.evidenceToast.classList.remove('hidden');
   }
 
@@ -349,21 +406,39 @@ export class Game {
   confirmTheorySelection() {
     this.reconstructionSystem.confirmTheory();
     this.toggleReconstructionModal(false);
-    this.hudStatus.textContent = 'THEORY BUILT';
-    this.updateCaseBoardUI();
+    
+    // M5 Trigger Rule Reversal Twist Interruption!
+    if (this.screenTwist) {
+      this.screenTwist.classList.remove('hidden');
+      this.screenTwist.classList.add('active');
+    } else {
+      this.acceptTwist();
+    }
+  }
+
+  acceptTwist() {
+    if (this.screenTwist) {
+      this.screenTwist.classList.add('hidden');
+      this.screenTwist.classList.remove('active');
+    }
+    this.setState(GAME_STATES.INK_PHASE);
   }
 
   updateHUDClues() {
     const stats = this.clueSystem.getStats();
     if (this.hudClues) {
-      this.hudClues.textContent = `${stats.collected}/${stats.total}`;
+      if (this.state === GAME_STATES.INK_PHASE && stats.lost > 0) {
+        this.hudClues.textContent = `${stats.collected}/${stats.total} (ERASED: ${stats.lost})`;
+      } else {
+        this.hudClues.textContent = `${stats.collected}/${stats.total}`;
+      }
     }
   }
 
   updateCaseBoardUI() {
     const stats = this.clueSystem.getStats();
     if (this.caseboardSummary) {
-      this.caseboardSummary.textContent = `CLUES COLLECTED: ${stats.collected} / ${stats.total}`;
+      this.caseboardSummary.textContent = `CLUES COLLECTED: ${stats.collected} / ${stats.total} | ERASED: ${stats.lost}`;
     }
 
     if (this.caseboardTheoryBox) {
@@ -384,7 +459,10 @@ export class Game {
       let statusClass = 'undiscovered';
       let statusText = '? UNDISCOVERED';
 
-      if (clue.isCollected) {
+      if (clue.isLost) {
+        statusClass = 'lost';
+        statusText = '❌ ERASED BY INK';
+      } else if (clue.isCollected) {
         statusClass = 'collected';
         statusText = '✓ COLLECTED';
       } else if (clue.isDiscovered) {
@@ -395,8 +473,8 @@ export class Game {
       li.className = `caseboard-item ${statusClass}`;
       li.innerHTML = `
         <div class="case-info">
-          <strong>${clue.isDiscovered || clue.isCollected ? clue.name : 'Unknown Evidence'}</strong>
-          <div class="case-desc">${clue.isCollected ? clue.description : (clue.isDiscovered ? 'Discovered in panel. Reach it to collect.' : 'Hidden in darkness.')}</div>
+          <strong>${clue.isDiscovered || clue.isCollected || clue.isLost ? clue.name : 'Unknown Evidence'}</strong>
+          <div class="case-desc">${clue.isLost ? 'Covered by dark ink. Evidence erased from the scene.' : (clue.isCollected ? clue.description : (clue.isDiscovered ? 'Discovered in panel. Reach it to collect.' : 'Hidden in darkness.'))}</div>
         </div>
         <div class="case-status-tag">${statusText}</div>
       `;

@@ -3,6 +3,7 @@
 export const GAME_STATES = {
   TITLE: 'TITLE',
   PLAYING: 'PLAYING',
+  INK_PHASE: 'INK_PHASE',
   GAME_OVER: 'GAME_OVER'
 };
 

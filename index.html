@@ -19,7 +19,7 @@
       <!-- Comic Panel Header / Banner -->
       <header class="comic-header">
         <h1 class="comic-title">SNAKE NOIR</h1>
-        <div class="panel-tag">PANEL #01: THE INVESTIGATION</div>
+        <div class="panel-tag" id="panel-tag">PANEL #01: THE INVESTIGATION</div>
       </header>
 
       <!-- Main Game Canvas Frame -->
@@ -28,10 +28,10 @@
 
         <!-- Evidence Toast Popup Notification -->
         <div id="evidence-toast" class="evidence-toast hidden">
-          <div class="toast-badge">EVIDENCE FOUND</div>
+          <div class="toast-badge" id="toast-badge">EVIDENCE FOUND</div>
           <h3 id="toast-title" class="toast-title">FRESH FOOTPRINT</h3>
           <div id="toast-desc" class="toast-desc">"A heavy boot imprint smeared across the tile floor."</div>
-          <button id="btn-toast-dismiss" class="comic-btn btn-sm">COLLECT EVIDENCE [ENTER]</button>
+          <button id="btn-toast-dismiss" class="comic-btn btn-sm">CONTINUE [ENTER]</button>
         </div>
 
         <!-- Title Screen -->
@@ -88,6 +88,18 @@
               <!-- Rendered dynamically -->
             </div>
             <button id="btn-confirm-theory" class="comic-btn">CONFIRM THEORY [ENTER]</button>
+          </div>
+        </div>
+
+        <!-- M5 Rule Reversal Twist Interruption Screen -->
+        <div id="screen-twist" class="overlay-screen hidden">
+          <div class="screen-content twist-content">
+            <div class="impact-text">KRAK!</div>
+            <h2 class="noir-heading error-text">THE RULE REVERSAL</h2>
+            <div class="narration-box">
+              "Something is wrong... The panel is no longer hiding. You are not illuminating the truth — your movement is leaking DARK INK and erasing the evidence!"
+            </div>
+            <button id="btn-accept-twist" class="comic-btn">ACCEPT THE INK [SPACE]</button>
           </div>
         </div>
 
