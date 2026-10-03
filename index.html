@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SNAKE NOIR — The Unprinted Panel</title>
+  
+  <!-- Typography for Noir / Comic aesthetic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Main Comic Page Wrapper -->
+    <main class="comic-page">
+      <!-- Comic Panel Header / Banner -->
+      <header class="comic-header">
+        <h1 class="comic-title">SNAKE NOIR</h1>
+        <div class="panel-tag">PANEL #01: THE INVESTIGATION</div>
+      </header>
+
+      <!-- Main Game Canvas Frame -->
+      <div class="panel-frame" id="panel-frame">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Overlay Screens -->
+        <div id="screen-title" class="overlay-screen active">
+          <div class="screen-content">
+            <h2 class="noir-heading">THE UNPRINTED PANEL</h2>
+            <div class="narration-box">
+              "The rain never stopped in Grid City. A case landed on my desk, raw and unwritten..."
+            </div>
+            <div class="controls-guide">
+              <div class="control-item">
+                <span class="key-badge">W A S D</span> / <span class="key-badge">ARROWS</span> : MOVE DETECTIVE
+              </div>
+              <div class="control-item">
+                <span class="key-badge">SPACE</span> / <span class="key-badge">TAP</span> : START CASE
+              </div>
+            </div>
+            <button id="btn-start" class="comic-btn">INVESTIGATE [SPACE]</button>
+          </div>
+        </div>
+
+        <div id="screen-game-over" class="overlay-screen hidden">
+          <div class="screen-content">
+            <h2 class="noir-heading error-text">CASE CLOSED</h2>
+            <div class="narration-box">
+              "A dead end. The panel collapsed before the truth could surface..."
+            </div>
+            <div class="stats-box">
+              <span id="final-score-label">DISTANCES COVERED: <strong id="final-score-val">0</strong> STEPS</span>
+            </div>
+            <button id="btn-restart" class="comic-btn">RETRY PANEL [SPACE]</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HUD & Touch Controls for Mobile -->
+      <footer class="comic-footer">
+        <div class="hud-bar">
+          <div class="hud-item">STATUS: <span id="hud-status">STANDBY</span></div>
+          <div class="hud-item">STEPS: <span id="hud-steps">0</span></div>
+        </div>
+
+        <!-- Virtual Touch D-Pad for Mobile Browsers -->
+        <div id="mobile-controls" class="mobile-dpad">
+          <button class="dpad-btn btn-up" data-dir="UP" aria-label="Up">▲</button>
+          <div class="dpad-mid">
+            <button class="dpad-btn btn-left" data-dir="LEFT" aria-label="Left">◄</button>
+            <div class="dpad-center"></div>
+            <button class="dpad-btn btn-right" data-dir="RIGHT" aria-label="Right">►</button>
+          </div>
+          <button class="dpad-btn btn-down" data-dir="DOWN" aria-label="Down">▼</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

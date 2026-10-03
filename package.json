@@ -1,0 +1,14 @@
+{
+  "name": "snake-noir",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Snake Noir — The Unprinted Panel (Browser Game)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.8"
+  }
+}
