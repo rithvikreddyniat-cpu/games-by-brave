@@ -85,17 +85,19 @@ export class InputHandler {
     if (typeof document === 'undefined') return;
     // Touch D-Pad buttons with clean single event handling
     const dpadButtons = document.querySelectorAll('.dpad-btn');
-    dpadButtons.forEach((btn) => {
-      const dir = btn.getAttribute('data-dir');
-      if (dir) {
-        const handleTrigger = (e) => {
-          e.preventDefault();
-          this.enqueueDirection(dir);
-        };
+    if (dpadButtons) {
+      dpadButtons.forEach((btn) => {
+        const dir = btn.getAttribute('data-dir');
+        if (dir) {
+          const handleTrigger = (e) => {
+            e.preventDefault();
+            this.enqueueDirection(dir);
+          };
 
-        btn.addEventListener('pointerdown', handleTrigger);
-      }
-    });
+          btn.addEventListener('pointerdown', handleTrigger);
+        }
+      });
+    }
   }
 
   initSwipe() {

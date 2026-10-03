@@ -85,8 +85,12 @@ export class Game {
   }
 
   initEventListeners() {
-    this.btnStart.addEventListener('click', () => this.handleActionTrigger());
-    this.btnRestart.addEventListener('click', () => this.handleActionTrigger());
+    if (this.btnStart) {
+      this.btnStart.addEventListener('click', () => this.handleActionTrigger());
+    }
+    if (this.btnRestart) {
+      this.btnRestart.addEventListener('click', () => this.handleActionTrigger());
+    }
     
     // Case Board Modal controls
     if (this.btnOpenCaseboard) {
@@ -130,41 +134,43 @@ export class Game {
     }
 
     // Keyboard listener for shortcuts
-    window.addEventListener('keydown', (e) => {
-      if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-        e.preventDefault();
-        if (this.currentRevSlide < this.revSlides.length - 1) {
-          this.nextRevelationPanel();
-        } else {
-          this.startGame();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', (e) => {
+        if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
+          e.preventDefault();
+          if (this.currentRevSlide < this.revSlides.length - 1) {
+            this.nextRevelationPanel();
+          } else {
+            this.startGame();
+          }
+        } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
+          e.preventDefault();
+          this.acceptTwist();
+        } else if (e.code === 'KeyC') {
+          e.preventDefault();
+          this.toggleCaseBoard();
+        } else if (e.code === 'KeyR') {
+          e.preventDefault();
+          const stats = this.clueSystem.getStats();
+          if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
+            this.toggleSecondReconstructionModal();
+          } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+            this.toggleReconstructionModal();
+          }
+        } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
+          this.dismissToast();
+        } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
+          this.confirmTheorySelection();
+        } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
+          this.confirmSecondTheorySelection();
         }
-      } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-        e.preventDefault();
-        this.acceptTwist();
-      } else if (e.code === 'KeyC') {
-        e.preventDefault();
-        this.toggleCaseBoard();
-      } else if (e.code === 'KeyR') {
-        e.preventDefault();
-        const stats = this.clueSystem.getStats();
-        if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
-          this.toggleSecondReconstructionModal();
-        } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
-          this.toggleReconstructionModal();
-        }
-      } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
-        this.dismissToast();
-      } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
-        this.confirmTheorySelection();
-      } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
-        this.confirmSecondTheorySelection();
-      }
-    });
+      });
 
-    // Window Resize handling for canvas scaling
-    window.addEventListener('resize', () => {
-      this.renderer.resizeCanvas();
-    });
+      // Window Resize handling for canvas scaling
+      window.addEventListener('resize', () => {
+        this.renderer.resizeCanvas();
+      });
+    }
   }
 
   handleActionTrigger() {
@@ -180,58 +186,74 @@ export class Game {
 
     switch (newState) {
       case GAME_STATES.TITLE:
-        this.screenTitle.classList.remove('hidden');
-        this.screenTitle.classList.add('active');
-        this.screenGameOver.classList.add('hidden');
-        this.screenGameOver.classList.remove('active');
+        if (this.screenTitle) {
+          this.screenTitle.classList.remove('hidden');
+          this.screenTitle.classList.add('active');
+        }
+        if (this.screenGameOver) {
+          this.screenGameOver.classList.add('hidden');
+          this.screenGameOver.classList.remove('active');
+        }
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
         if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-        this.hudStatus.textContent = 'STANDBY';
+        if (this.hudStatus) this.hudStatus.textContent = 'STANDBY';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
         break;
 
       case GAME_STATES.PLAYING:
-        this.screenTitle.classList.add('hidden');
-        this.screenTitle.classList.remove('active');
-        this.screenGameOver.classList.add('hidden');
-        this.screenGameOver.classList.remove('active');
+        if (this.screenTitle) {
+          this.screenTitle.classList.add('hidden');
+          this.screenTitle.classList.remove('active');
+        }
+        if (this.screenGameOver) {
+          this.screenGameOver.classList.add('hidden');
+          this.screenGameOver.classList.remove('active');
+        }
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
         if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-        this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
+        if (this.hudStatus) this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #01: THE INVESTIGATION';
         break;
 
       case GAME_STATES.INK_PHASE:
-        this.screenTitle.classList.add('hidden');
-        this.screenTitle.classList.remove('active');
-        this.screenGameOver.classList.add('hidden');
-        this.screenGameOver.classList.remove('active');
+        if (this.screenTitle) {
+          this.screenTitle.classList.add('hidden');
+          this.screenTitle.classList.remove('active');
+        }
+        if (this.screenGameOver) {
+          this.screenGameOver.classList.add('hidden');
+          this.screenGameOver.classList.remove('active');
+        }
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
         if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-        this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
+        if (this.hudStatus) this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #02: THE REVERSAL';
         break;
 
       case GAME_STATES.REVELATION:
-        this.screenTitle.classList.add('hidden');
-        this.screenGameOver.classList.add('hidden');
+        if (this.screenTitle) this.screenTitle.classList.add('hidden');
+        if (this.screenGameOver) this.screenGameOver.classList.add('hidden');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
         if (this.screenRevelation) {
           this.screenRevelation.classList.remove('hidden');
           this.screenRevelation.classList.add('active');
         }
-        this.hudStatus.textContent = 'CASE REVEALED';
+        if (this.hudStatus) this.hudStatus.textContent = 'CASE REVEALED';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVELATION';
         break;
 
       case GAME_STATES.GAME_OVER:
-        this.screenGameOver.classList.remove('hidden');
-        this.screenGameOver.classList.add('active');
-        this.screenTitle.classList.add('hidden');
-        this.screenTitle.classList.remove('active');
+        if (this.screenGameOver) {
+          this.screenGameOver.classList.remove('hidden');
+          this.screenGameOver.classList.add('active');
+        }
+        if (this.screenTitle) {
+          this.screenTitle.classList.add('hidden');
+          this.screenTitle.classList.remove('active');
+        }
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
         if (this.screenRevelation) this.screenRevelation.classList.add('hidden');
-        this.hudStatus.textContent = 'CASE CLOSED';
+        if (this.hudStatus) this.hudStatus.textContent = 'CASE CLOSED';
         
         const stats = this.clueSystem.getStats();
         if (this.finalCluesVal) {
@@ -240,11 +262,11 @@ export class Game {
         if (this.finalTheoryBox) {
           if (this.reconstructionSystem.isSecondSubmitted) {
             const secSummary = this.reconstructionSystem.getSecondSummary();
-            this.finalTheoryText.textContent = `REVISED THEORY: ${secSummary.revisedEntry} | ${secSummary.revisedSuspect}`;
+            if (this.finalTheoryText) this.finalTheoryText.textContent = `REVISED THEORY: ${secSummary.revisedEntry} | ${secSummary.revisedSuspect}`;
             this.finalTheoryBox.classList.remove('hidden');
           } else if (this.reconstructionSystem.isSubmitted) {
             const summary = this.reconstructionSystem.getSummary();
-            this.finalTheoryText.textContent = `INITIAL THEORY: ${summary.entry} | ${summary.suspect}`;
+            if (this.finalTheoryText) this.finalTheoryText.textContent = `INITIAL THEORY: ${summary.entry} | ${summary.suspect}`;
             this.finalTheoryBox.classList.remove('hidden');
           } else {
             this.finalTheoryBox.classList.add('hidden');
@@ -292,23 +314,27 @@ export class Game {
   }
 
   loop(timestamp) {
-    const deltaTime = timestamp - this.lastFrameTime;
-    this.lastFrameTime = timestamp;
+    try {
+      const deltaTime = timestamp - this.lastFrameTime;
+      this.lastFrameTime = timestamp;
 
-    if (this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) {
-      this.accumulator += deltaTime;
+      if (this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) {
+        this.accumulator += deltaTime;
 
-      // Update grid step when accumulator reaches tick interval
-      while (this.accumulator >= CONFIG.TICK_INTERVAL_MS) {
-        this.tick();
-        this.accumulator -= CONFIG.TICK_INTERVAL_MS;
+        // Update grid step when accumulator reaches tick interval
+        while (this.accumulator >= CONFIG.TICK_INTERVAL_MS) {
+          this.tick();
+          this.accumulator -= CONFIG.TICK_INTERVAL_MS;
+        }
       }
+
+      // Render frame
+      this.renderer.render(this.snake, this.renderer.lightSystem, this.clueSystem, this.state);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      requestAnimationFrame((ts) => this.loop(ts));
     }
-
-    // Render frame
-    this.renderer.render(this.snake, this.renderer.lightSystem, this.clueSystem, this.state);
-
-    requestAnimationFrame((ts) => this.loop(ts));
   }
 
   tick() {
@@ -319,7 +345,7 @@ export class Game {
     this.snake.update(nextDir);
 
     // Update HUD steps
-    this.hudSteps.textContent = this.snake.stepsCount;
+    if (this.hudSteps) this.hudSteps.textContent = this.snake.stepsCount;
 
     const isInkPhase = (this.state === GAME_STATES.INK_PHASE);
 
@@ -405,16 +431,16 @@ export class Game {
         this.toastBadge.textContent = 'EVIDENCE ERASED';
         this.toastBadge.className = 'toast-badge erased';
       }
-      this.toastTitle.textContent = clue.name.toUpperCase();
-      this.toastDesc.textContent = `"Dark ink covers ${clue.name}. The evidence has been erased!"`;
+      if (this.toastTitle) this.toastTitle.textContent = clue.name.toUpperCase();
+      if (this.toastDesc) this.toastDesc.textContent = `"Dark ink covers ${clue.name}. The evidence has been erased!"`;
     } else {
       this.showComicImpact('CLUE!');
       if (this.toastBadge) {
         this.toastBadge.textContent = 'EVIDENCE FOUND';
         this.toastBadge.className = 'toast-badge';
       }
-      this.toastTitle.textContent = clue.name.toUpperCase();
-      this.toastDesc.textContent = `"${clue.description}"`;
+      if (this.toastTitle) this.toastTitle.textContent = clue.name.toUpperCase();
+      if (this.toastDesc) this.toastDesc.textContent = `"${clue.description}"`;
     }
     if (this.evidenceToast) {
       this.evidenceToast.classList.remove('hidden');

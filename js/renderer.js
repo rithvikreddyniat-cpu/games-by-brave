@@ -6,8 +6,6 @@ import { InkSystem } from './inkSystem.js';
 export class Renderer {
   constructor(canvasElement) {
     this.canvas = canvasElement;
-    this.ctx = this.canvas.getContext('2d');
-    
     this.cols = CONFIG.GRID_COLS;
     this.rows = CONFIG.GRID_ROWS;
     this.cellSize = CONFIG.CELL_SIZE;
@@ -15,8 +13,14 @@ export class Renderer {
     // Set internal resolution
     this.width = this.cols * this.cellSize;
     this.height = this.rows * this.cellSize;
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
+
+    if (this.canvas) {
+      this.ctx = this.canvas.getContext('2d');
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+    } else {
+      this.ctx = null;
+    }
 
     // Initialize reusable Light System and Ink System instances
     this.lightSystem = new LightSystem(this.cellSize);
@@ -27,13 +31,16 @@ export class Renderer {
 
   resizeCanvas() {
     // Sharp pixel rendering
-    this.ctx.imageSmoothingEnabled = false;
+    if (this.ctx) {
+      this.ctx.imageSmoothingEnabled = false;
+    }
   }
 
   /**
    * Main render method called every frame
    */
   render(snake, lightSystem, clueSystem, gameState) {
+    if (!this.ctx) return;
     const isInkPhase = (gameState === GAME_STATES.INK_PHASE);
 
     if (isInkPhase) {

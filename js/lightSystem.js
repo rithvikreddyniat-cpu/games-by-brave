@@ -7,6 +7,8 @@ export class LightSystem {
     this.headRadius = cellSize * 3.6;
     this.trailRadius = cellSize * 2.4;
     this.darknessOpacity = 0.96;
+    this.maskCanvas = null;
+    this.maskCtx = null;
   }
 
   /**
@@ -105,21 +107,34 @@ export class LightSystem {
 
   /**
    * Render the darkness mask and radial light sources onto the canvas context.
-   * Uses hardware-accelerated canvas composite operations.
+   * Builds darkness mask on an offscreen canvas and overlays it onto main canvas.
    */
   render(ctx, width, height, snake) {
     if (!snake || !snake.body || snake.body.length === 0) return;
 
-    ctx.save();
+    // 1. Lazy creation or resize of offscreen mask canvas
+    if (!this.maskCanvas) {
+      this.maskCanvas = document.createElement('canvas');
+      this.maskCanvas.width = width;
+      this.maskCanvas.height = height;
+      this.maskCtx = this.maskCanvas.getContext('2d');
+    } else if (this.maskCanvas.width !== width || this.maskCanvas.height !== height) {
+      this.maskCanvas.width = width;
+      this.maskCanvas.height = height;
+    }
 
-    // 1. Draw dark background mask
-    ctx.fillStyle = `rgba(5, 5, 8, ${this.darknessOpacity})`;
-    ctx.fillRect(0, 0, width, height);
+    const maskCtx = this.maskCtx;
+    if (!maskCtx) return;
 
-    // 2. Carve out illuminated pools using 'destination-out' blending
-    ctx.globalCompositeOperation = 'destination-out';
+    // 2. Clear offscreen canvas & fill with dark background mask
+    maskCtx.clearRect(0, 0, width, height);
+    maskCtx.fillStyle = `rgba(5, 5, 8, ${this.darknessOpacity})`;
+    maskCtx.fillRect(0, 0, width, height);
 
-    // A. Carve trail segments light (from tail to head)
+    // 3. Carve out illuminated pools using 'destination-out' blending on offscreen canvas
+    maskCtx.globalCompositeOperation = 'destination-out';
+
+    // A. Carve trail segments light (from tail to index 1)
     for (let i = snake.body.length - 1; i >= 1; i--) {
       const seg = snake.body[i];
       const cx = (seg.x + 0.5) * this.cellSize;
@@ -128,15 +143,15 @@ export class LightSystem {
       const tailFade = 1 - (i / snake.body.length) * 0.25;
       const radius = this.trailRadius * tailFade;
 
-      const grad = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius);
+      const grad = maskCtx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius);
       grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
       grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.85)');
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.fill();
+      maskCtx.fillStyle = grad;
+      maskCtx.beginPath();
+      maskCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      maskCtx.fill();
     }
 
     // B. Carve head light pool
@@ -144,7 +159,7 @@ export class LightSystem {
     const headCx = (head.x + 0.5) * this.cellSize;
     const headCy = (head.y + 0.5) * this.cellSize;
 
-    const headGrad = ctx.createRadialGradient(
+    const headGrad = maskCtx.createRadialGradient(
       headCx, headCy, this.headRadius * 0.25,
       headCx, headCy, this.headRadius
     );
@@ -152,32 +167,15 @@ export class LightSystem {
     headGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0.9)');
     headGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    ctx.fillStyle = headGrad;
-    ctx.beginPath();
-    ctx.arc(headCx, headCy, this.headRadius, 0, Math.PI * 2);
-    ctx.fill();
+    maskCtx.fillStyle = headGrad;
+    maskCtx.beginPath();
+    maskCtx.arc(headCx, headCy, this.headRadius, 0, Math.PI * 2);
+    maskCtx.fill();
 
-    // 3. Reset composite operation back to default
-    ctx.globalCompositeOperation = 'source-over';
+    // Reset composite operation back to default
+    maskCtx.globalCompositeOperation = 'source-over';
 
-    // 4. Render atmospheric light glow overlay for high contrast noir aesthetic
-    for (let i = 0; i < snake.body.length; i++) {
-      const seg = snake.body[i];
-      const cx = (seg.x + 0.5) * this.cellSize;
-      const cy = (seg.y + 0.5) * this.cellSize;
-      const isHead = (i === 0);
-      const rad = isHead ? this.headRadius : this.trailRadius * 0.9;
-
-      const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-      glowGrad.addColorStop(0, isHead ? 'rgba(245, 243, 235, 0.12)' : 'rgba(245, 243, 235, 0.05)');
-      glowGrad.addColorStop(1, 'rgba(245, 243, 235, 0)');
-
-      ctx.fillStyle = glowGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
+    // 4. Draw the carved darkness mask over the main canvas
+    ctx.drawImage(this.maskCanvas, 0, 0);
   }
 }
