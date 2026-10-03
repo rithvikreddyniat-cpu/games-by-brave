@@ -50,6 +50,12 @@ export class Game {
     this.screenTwist = document.getElementById('screen-twist');
     this.btnAcceptTwist = document.getElementById('btn-accept-twist');
 
+    // M6 Second Reconstruction DOM Elements
+    this.modalSecondReconstruction = document.getElementById('modal-second-reconstruction');
+    this.secondReconstructEvidenceBadges = document.getElementById('second-reconstruct-evidence-badges');
+    this.secondReconstructQuestions = document.getElementById('second-reconstruct-questions');
+    this.btnConfirmSecondTheory = document.getElementById('btn-confirm-second-theory');
+
     // Modules
     this.renderer = new Renderer(this.canvas);
     this.snake = new Snake(CONFIG.GRID_COLS, CONFIG.GRID_ROWS);
@@ -57,9 +63,10 @@ export class Game {
     this.reconstructionSystem = new ReconstructionSystem();
     this.inputHandler = new InputHandler(() => this.handleActionTrigger());
 
-    // Game loop timing variables
+    // Game loop timing & state variables
     this.lastFrameTime = 0;
     this.accumulator = 0;
+    this.inkStepsCount = 0;
 
     this.initEventListeners();
     this.setState(GAME_STATES.TITLE);
@@ -80,12 +87,21 @@ export class Game {
       this.btnToastDismiss.addEventListener('click', () => this.dismissToast());
     }
 
-    // M4 Reconstruction Modal controls
+    // M4 & M6 Reconstruction Modal controls
     if (this.btnOpenReconstruct) {
-      this.btnOpenReconstruct.addEventListener('click', () => this.toggleReconstructionModal());
+      this.btnOpenReconstruct.addEventListener('click', () => {
+        if (this.state === GAME_STATES.INK_PHASE) {
+          this.toggleSecondReconstructionModal();
+        } else {
+          this.toggleReconstructionModal();
+        }
+      });
     }
     if (this.btnConfirmTheory) {
       this.btnConfirmTheory.addEventListener('click', () => this.confirmTheorySelection());
+    }
+    if (this.btnConfirmSecondTheory) {
+      this.btnConfirmSecondTheory.addEventListener('click', () => this.confirmSecondTheorySelection());
     }
 
     // M5 Twist Interruption Modal controls
@@ -93,7 +109,7 @@ export class Game {
       this.btnAcceptTwist.addEventListener('click', () => this.acceptTwist());
     }
 
-    // Keyboard listener for shortcuts [KeyC] Caseboard, [KeyR] Reconstruct, [Space/Enter] Actions
+    // Keyboard listener for shortcuts
     window.addEventListener('keydown', (e) => {
       if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
@@ -104,13 +120,17 @@ export class Game {
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         const stats = this.clueSystem.getStats();
-        if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+        if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
+          this.toggleSecondReconstructionModal();
+        } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
           this.toggleReconstructionModal();
         }
       } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
         this.dismissToast();
       } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
         this.confirmTheorySelection();
+      } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
+        this.confirmSecondTheorySelection();
       }
     });
 
@@ -158,7 +178,7 @@ export class Game {
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
         if (this.screenTwist) this.screenTwist.classList.add('hidden');
-        this.hudStatus.textContent = 'INK ERASURE';
+        this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #02: THE REVERSAL';
         break;
 
@@ -172,12 +192,16 @@ export class Game {
         
         const stats = this.clueSystem.getStats();
         if (this.finalCluesVal) {
-          this.finalCluesVal.textContent = `${stats.collected} / ${stats.total}`;
+          this.finalCluesVal.textContent = `${stats.collected} / ${stats.total} (ERASED: ${stats.lost})`;
         }
         if (this.finalTheoryBox) {
-          if (this.reconstructionSystem.isSubmitted) {
+          if (this.reconstructionSystem.isSecondSubmitted) {
+            const secSummary = this.reconstructionSystem.getSecondSummary();
+            this.finalTheoryText.textContent = `REVISED THEORY: ${secSummary.revisedEntry} | ${secSummary.revisedSuspect}`;
+            this.finalTheoryBox.classList.remove('hidden');
+          } else if (this.reconstructionSystem.isSubmitted) {
             const summary = this.reconstructionSystem.getSummary();
-            this.finalTheoryText.textContent = `${summary.entry} | ${summary.suspect}`;
+            this.finalTheoryText.textContent = `INITIAL THEORY: ${summary.entry} | ${summary.suspect}`;
             this.finalTheoryBox.classList.remove('hidden');
           } else {
             this.finalTheoryBox.classList.add('hidden');
@@ -194,10 +218,12 @@ export class Game {
     this.renderer.inkSystem.reset();
     this.inputHandler.reset();
     this.accumulator = 0;
+    this.inkStepsCount = 0;
 
     this.dismissToast();
     this.toggleCaseBoard(false);
     this.toggleReconstructionModal(false);
+    this.toggleSecondReconstructionModal(false);
     
     if (this.btnOpenReconstruct) {
       this.btnOpenReconstruct.classList.add('hidden');
@@ -249,6 +275,8 @@ export class Game {
     const isInkPhase = (this.state === GAME_STATES.INK_PHASE);
 
     if (isInkPhase) {
+      this.inkStepsCount++;
+
       // Deposit persistent dark ink onto current snake positions
       this.renderer.inkSystem.depositInk(this.snake);
 
@@ -257,6 +285,18 @@ export class Game {
       if (res && res.type === 'ERASED') {
         this.showToast(res.clue, true);
         this.updateHUDClues();
+      }
+
+      // M6 Second Reconstruction Trigger Check
+      const stats = this.clueSystem.getStats();
+      if (this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
+        if (this.btnOpenReconstruct) {
+          this.btnOpenReconstruct.classList.remove('hidden');
+        }
+        if (!this.reconstructionSystem.secondAutoPromptTriggered) {
+          this.reconstructionSystem.secondAutoPromptTriggered = true;
+          this.toggleSecondReconstructionModal(true);
+        }
       }
     } else {
       // Light phase discovery/collection
@@ -347,6 +387,23 @@ export class Game {
     }
   }
 
+  toggleSecondReconstructionModal(forceState = null) {
+    if (!this.modalSecondReconstruction) return;
+
+    const shouldShow = (forceState !== null)
+      ? forceState
+      : this.modalSecondReconstruction.classList.contains('hidden');
+
+    if (shouldShow) {
+      this.renderSecondReconstructionUI();
+      this.modalSecondReconstruction.classList.remove('hidden');
+      this.modalSecondReconstruction.classList.add('active');
+    } else {
+      this.modalSecondReconstruction.classList.add('hidden');
+      this.modalSecondReconstruction.classList.remove('active');
+    }
+  }
+
   renderReconstructionUI() {
     if (!this.reconstructEvidenceBadges || !this.reconstructQuestions) return;
 
@@ -403,6 +460,70 @@ export class Game {
     });
   }
 
+  renderSecondReconstructionUI() {
+    if (!this.secondReconstructEvidenceBadges || !this.secondReconstructQuestions) return;
+
+    // 1. Render Survived vs Erased Evidence Badges
+    this.secondReconstructEvidenceBadges.innerHTML = '';
+    this.clueSystem.clues.forEach(c => {
+      const badge = document.createElement('div');
+      if (c.isLost) {
+        badge.className = 'evidence-badge erased';
+        badge.textContent = `❌ ${c.name} (ERASED)`;
+      } else if (c.isCollected || c.isDiscovered) {
+        badge.className = 'evidence-badge';
+        badge.textContent = `✓ ${c.name}`;
+      } else {
+        badge.className = 'evidence-badge';
+        badge.style.opacity = '0.5';
+        badge.textContent = `? ${c.name}`;
+      }
+      this.secondReconstructEvidenceBadges.appendChild(badge);
+    });
+
+    // 2. Render Second Reconstruction Questions & Options
+    this.secondReconstructQuestions.innerHTML = '';
+    this.reconstructionSystem.secondQuestions.forEach((q) => {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+
+      const currentSelected = this.reconstructionSystem.secondSelectedChoices[q.id];
+
+      let optionsHTML = '';
+      q.options.forEach(opt => {
+        const isSel = (opt.id === currentSelected);
+        optionsHTML += `
+          <button class="option-btn ${isSel ? 'selected' : ''}" data-qid="${q.id}" data-optid="${opt.id}">
+            ${isSel ? '✓ ' : ''}${opt.label}
+            <div style="font-size:0.75rem; font-weight:normal; margin-top:2px; opacity:0.8;">${opt.desc}</div>
+          </button>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="question-title">${q.title}</div>
+        <div class="question-ref">PANEL STATUS: ${q.evidenceRef}</div>
+        <div class="options-group">${optionsHTML}</div>
+      `;
+
+      this.secondReconstructQuestions.appendChild(card);
+    });
+
+    // Event Delegation for option buttons
+    const optButtons = this.secondReconstructQuestions.querySelectorAll('.option-btn');
+    optButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget;
+        const qId = target.getAttribute('data-qid');
+        const optId = target.getAttribute('data-optid');
+        if (qId && optId) {
+          this.reconstructionSystem.selectSecondOption(qId, optId);
+          this.renderSecondReconstructionUI();
+        }
+      });
+    });
+  }
+
   confirmTheorySelection() {
     this.reconstructionSystem.confirmTheory();
     this.toggleReconstructionModal(false);
@@ -414,6 +535,13 @@ export class Game {
     } else {
       this.acceptTwist();
     }
+  }
+
+  confirmSecondTheorySelection() {
+    this.reconstructionSystem.confirmSecondTheory();
+    this.toggleSecondReconstructionModal(false);
+    this.hudStatus.textContent = 'RECONSTRUCTION COMPLETE';
+    this.updateCaseBoardUI();
   }
 
   acceptTwist() {
@@ -442,9 +570,17 @@ export class Game {
     }
 
     if (this.caseboardTheoryBox) {
-      if (this.reconstructionSystem.isSubmitted) {
+      if (this.reconstructionSystem.isSecondSubmitted) {
         const summary = this.reconstructionSystem.getSummary();
-        this.caseboardTheoryText.textContent = `${summary.entry} | ${summary.suspect}`;
+        const secSummary = this.reconstructionSystem.getSecondSummary();
+        this.caseboardTheoryText.innerHTML = `
+          <div>INITIAL: ${summary.entry} | ${summary.suspect}</div>
+          <div style="margin-top:4px; color:#ff8a8a;">REVISED: ${secSummary.revisedEntry} | ${secSummary.revisedSuspect}</div>
+        `;
+        this.caseboardTheoryBox.classList.remove('hidden');
+      } else if (this.reconstructionSystem.isSubmitted) {
+        const summary = this.reconstructionSystem.getSummary();
+        this.caseboardTheoryText.textContent = `INITIAL: ${summary.entry} | ${summary.suspect}`;
         this.caseboardTheoryBox.classList.remove('hidden');
       } else {
         this.caseboardTheoryBox.classList.add('hidden');

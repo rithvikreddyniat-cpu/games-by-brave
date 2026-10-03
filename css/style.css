@@ -560,7 +560,14 @@ canvas#game-canvas {
   100% { transform: scale(1) rotate(-3deg); opacity: 1; }
 }
 
-.caseboard-item.lost {
+.impact-text.text-sm {
+  font-size: 2.2rem;
+  letter-spacing: 3px;
+  padding: 2px 12px;
+  box-shadow: 3px 3px 0px #ffffff;
+}
+
+.evidence-badge.erased {
   background: #240a0a;
   color: #ff8a8a;
   border-color: #d32f2f;
