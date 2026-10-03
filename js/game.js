@@ -4,6 +4,7 @@ import { Snake } from './snake.js';
 import { InputHandler } from './input.js';
 import { Renderer } from './renderer.js';
 import { ClueSystem } from './clueSystem.js';
+import { ReconstructionSystem } from './reconstructionSystem.js';
 
 export class Game {
   constructor() {
@@ -32,10 +33,22 @@ export class Game {
     this.hudClues = document.getElementById('hud-clues');
     this.finalCluesVal = document.getElementById('final-clues-val');
 
+    // M4 Reconstruction DOM Elements
+    this.modalReconstruction = document.getElementById('modal-reconstruction');
+    this.reconstructEvidenceBadges = document.getElementById('reconstruct-evidence-badges');
+    this.reconstructQuestions = document.getElementById('reconstruct-questions');
+    this.btnConfirmTheory = document.getElementById('btn-confirm-theory');
+    this.btnOpenReconstruct = document.getElementById('btn-open-reconstruct');
+    this.caseboardTheoryBox = document.getElementById('caseboard-theory-box');
+    this.caseboardTheoryText = document.getElementById('caseboard-theory-text');
+    this.finalTheoryBox = document.getElementById('final-theory-box');
+    this.finalTheoryText = document.getElementById('final-theory-text');
+
     // Modules
     this.renderer = new Renderer(this.canvas);
     this.snake = new Snake(CONFIG.GRID_COLS, CONFIG.GRID_ROWS);
     this.clueSystem = new ClueSystem(CONFIG.GRID_COLS, CONFIG.GRID_ROWS);
+    this.reconstructionSystem = new ReconstructionSystem();
     this.inputHandler = new InputHandler(() => this.handleActionTrigger());
 
     // Game loop timing variables
@@ -50,7 +63,7 @@ export class Game {
     this.btnStart.addEventListener('click', () => this.handleActionTrigger());
     this.btnRestart.addEventListener('click', () => this.handleActionTrigger());
     
-    // Case Board Modal & Toast controls
+    // Case Board Modal controls
     if (this.btnOpenCaseboard) {
       this.btnOpenCaseboard.addEventListener('click', () => this.toggleCaseBoard());
     }
@@ -61,13 +74,29 @@ export class Game {
       this.btnToastDismiss.addEventListener('click', () => this.dismissToast());
     }
 
-    // Keyboard listener for Case Board toggle [KeyC] & Toast dismissal [Enter/Space]
+    // M4 Reconstruction Modal controls
+    if (this.btnOpenReconstruct) {
+      this.btnOpenReconstruct.addEventListener('click', () => this.toggleReconstructionModal());
+    }
+    if (this.btnConfirmTheory) {
+      this.btnConfirmTheory.addEventListener('click', () => this.confirmTheorySelection());
+    }
+
+    // Keyboard listener for shortcuts [KeyC] Caseboard, [KeyR] Reconstruct, [Space/Enter] Actions
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyC') {
         e.preventDefault();
         this.toggleCaseBoard();
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        const stats = this.clueSystem.getStats();
+        if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+          this.toggleReconstructionModal();
+        }
       } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
         this.dismissToast();
+      } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
+        this.confirmTheorySelection();
       }
     });
 
@@ -102,7 +131,7 @@ export class Game {
         this.screenTitle.classList.remove('active');
         this.screenGameOver.classList.add('hidden');
         this.screenGameOver.classList.remove('active');
-        this.hudStatus.textContent = 'INVESTIGATING';
+        this.hudStatus.textContent = this.reconstructionSystem.isSubmitted ? 'THEORY BUILT' : 'INVESTIGATING';
         break;
 
       case GAME_STATES.GAME_OVER:
@@ -116,6 +145,15 @@ export class Game {
         if (this.finalCluesVal) {
           this.finalCluesVal.textContent = `${stats.collected} / ${stats.total}`;
         }
+        if (this.finalTheoryBox) {
+          if (this.reconstructionSystem.isSubmitted) {
+            const summary = this.reconstructionSystem.getSummary();
+            this.finalTheoryText.textContent = `${summary.entry} | ${summary.suspect}`;
+            this.finalTheoryBox.classList.remove('hidden');
+          } else {
+            this.finalTheoryBox.classList.add('hidden');
+          }
+        }
         break;
     }
   }
@@ -123,11 +161,17 @@ export class Game {
   startGame() {
     this.snake.reset();
     this.clueSystem.reset();
+    this.reconstructionSystem.reset();
     this.inputHandler.reset();
     this.accumulator = 0;
 
     this.dismissToast();
     this.toggleCaseBoard(false);
+    this.toggleReconstructionModal(false);
+    
+    if (this.btnOpenReconstruct) {
+      this.btnOpenReconstruct.classList.add('hidden');
+    }
     this.updateHUDClues();
 
     this.setState(GAME_STATES.PLAYING);
@@ -178,8 +222,19 @@ export class Game {
       this.showToast(newlyCollected);
       this.updateHUDClues();
     } else {
-      // Also update HUD if new clue was illuminated/discovered
       this.updateHUDClues();
+    }
+
+    // M4 Reconstruction Trigger Check
+    const stats = this.clueSystem.getStats();
+    if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+      if (this.btnOpenReconstruct) {
+        this.btnOpenReconstruct.classList.remove('hidden');
+      }
+      if (!this.reconstructionSystem.autoPromptTriggered) {
+        this.reconstructionSystem.autoPromptTriggered = true;
+        this.toggleReconstructionModal(true);
+      }
     }
 
     // Check collisions
@@ -218,6 +273,86 @@ export class Game {
     }
   }
 
+  toggleReconstructionModal(forceState = null) {
+    if (!this.modalReconstruction) return;
+
+    const shouldShow = (forceState !== null)
+      ? forceState
+      : this.modalReconstruction.classList.contains('hidden');
+
+    if (shouldShow) {
+      this.renderReconstructionUI();
+      this.modalReconstruction.classList.remove('hidden');
+      this.modalReconstruction.classList.add('active');
+    } else {
+      this.modalReconstruction.classList.add('hidden');
+      this.modalReconstruction.classList.remove('active');
+    }
+  }
+
+  renderReconstructionUI() {
+    if (!this.reconstructEvidenceBadges || !this.reconstructQuestions) return;
+
+    // 1. Render Collected Evidence Badges
+    this.reconstructEvidenceBadges.innerHTML = '';
+    const collectedClues = this.clueSystem.clues.filter(c => c.isCollected);
+    collectedClues.forEach(c => {
+      const badge = document.createElement('div');
+      badge.className = 'evidence-badge';
+      badge.textContent = `${c.icon} ${c.name}`;
+      this.reconstructEvidenceBadges.appendChild(badge);
+    });
+
+    // 2. Render Reconstruction Questions & Options
+    this.reconstructQuestions.innerHTML = '';
+    this.reconstructionSystem.questions.forEach((q) => {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+
+      const currentSelected = this.reconstructionSystem.selectedChoices[q.id];
+
+      let optionsHTML = '';
+      q.options.forEach(opt => {
+        const isSel = (opt.id === currentSelected);
+        optionsHTML += `
+          <button class="option-btn ${isSel ? 'selected' : ''}" data-qid="${q.id}" data-optid="${opt.id}">
+            ${isSel ? '✓ ' : ''}${opt.label}
+            <div style="font-size:0.75rem; font-weight:normal; margin-top:2px; opacity:0.8;">${opt.desc}</div>
+          </button>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="question-title">${q.title}</div>
+        <div class="question-ref">SUPPORTING EVIDENCE: ${q.evidenceRef}</div>
+        <div class="options-group">${optionsHTML}</div>
+      `;
+
+      this.reconstructQuestions.appendChild(card);
+    });
+
+    // Event Delegation for option buttons
+    const optButtons = this.reconstructQuestions.querySelectorAll('.option-btn');
+    optButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget;
+        const qId = target.getAttribute('data-qid');
+        const optId = target.getAttribute('data-optid');
+        if (qId && optId) {
+          this.reconstructionSystem.selectOption(qId, optId);
+          this.renderReconstructionUI();
+        }
+      });
+    });
+  }
+
+  confirmTheorySelection() {
+    this.reconstructionSystem.confirmTheory();
+    this.toggleReconstructionModal(false);
+    this.hudStatus.textContent = 'THEORY BUILT';
+    this.updateCaseBoardUI();
+  }
+
   updateHUDClues() {
     const stats = this.clueSystem.getStats();
     if (this.hudClues) {
@@ -229,6 +364,16 @@ export class Game {
     const stats = this.clueSystem.getStats();
     if (this.caseboardSummary) {
       this.caseboardSummary.textContent = `CLUES COLLECTED: ${stats.collected} / ${stats.total}`;
+    }
+
+    if (this.caseboardTheoryBox) {
+      if (this.reconstructionSystem.isSubmitted) {
+        const summary = this.reconstructionSystem.getSummary();
+        this.caseboardTheoryText.textContent = `${summary.entry} | ${summary.suspect}`;
+        this.caseboardTheoryBox.classList.remove('hidden');
+      } else {
+        this.caseboardTheoryBox.classList.add('hidden');
+      }
     }
 
     if (!this.caseboardList) return;

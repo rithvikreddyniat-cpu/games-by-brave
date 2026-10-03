@@ -46,7 +46,7 @@
                 <span class="key-badge">W A S D</span> / <span class="key-badge">ARROWS</span> : MOVE DETECTIVE
               </div>
               <div class="control-item">
-                <span class="key-badge">C</span> : TOGGLE CASE BOARD
+                <span class="key-badge">C</span> : CASE BOARD | <span class="key-badge">R</span> : RECONSTRUCT
               </div>
               <div class="control-item">
                 <span class="key-badge">SPACE</span> / <span class="key-badge">TAP</span> : START CASE
@@ -66,7 +66,28 @@
             <ul id="caseboard-list" class="caseboard-list">
               <!-- Dynamically populated via JS -->
             </ul>
+            <div id="caseboard-theory-box" class="stats-box theory-box hidden">
+              <strong>CURRENT THEORY:</strong>
+              <div id="caseboard-theory-text" class="theory-text">Unbuilt</div>
+            </div>
             <button id="btn-close-caseboard" class="comic-btn">RESUME CASE [C]</button>
+          </div>
+        </div>
+
+        <!-- Case Reconstruction Modal Screen -->
+        <div id="modal-reconstruction" class="overlay-screen hidden">
+          <div class="screen-content reconstruct-content">
+            <h2 class="noir-heading">RECONSTRUCT THE CRIME</h2>
+            <div class="narration-box">
+              "Piece together the evidence. Formulate Detective Snake's official theory of the crime."
+            </div>
+            <div class="evidence-badges-bar" id="reconstruct-evidence-badges">
+              <!-- Rendered dynamically -->
+            </div>
+            <div class="reconstruct-questions" id="reconstruct-questions">
+              <!-- Rendered dynamically -->
+            </div>
+            <button id="btn-confirm-theory" class="comic-btn">CONFIRM THEORY [ENTER]</button>
           </div>
         </div>
 
@@ -80,6 +101,10 @@
             <div class="stats-box">
               <span id="final-score-label">EVIDENCE RECOVERED: <strong id="final-clues-val">0 / 5</strong></span>
             </div>
+            <div id="final-theory-box" class="stats-box theory-box hidden">
+              <strong>DETECTIVE THEORY:</strong>
+              <div id="final-theory-text" class="theory-text">None</div>
+            </div>
             <button id="btn-restart" class="comic-btn">RETRY PANEL [SPACE]</button>
           </div>
         </div>
@@ -90,7 +115,10 @@
         <div class="hud-bar">
           <div class="hud-item">STATUS: <span id="hud-status">STANDBY</span></div>
           <div class="hud-item">CLUES: <span id="hud-clues">0/5</span></div>
-          <button id="btn-open-caseboard" class="hud-btn">📁 CASE BOARD [C]</button>
+          <div class="hud-actions">
+            <button id="btn-open-caseboard" class="hud-btn">📁 BOARD [C]</button>
+            <button id="btn-open-reconstruct" class="hud-btn btn-highlight hidden">⚡ RECONSTRUCT [R]</button>
+          </div>
         </div>
 
         <!-- Virtual Touch D-Pad for Mobile Browsers -->

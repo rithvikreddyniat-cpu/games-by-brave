@@ -414,6 +414,128 @@ canvas#game-canvas {
   letter-spacing: 1px;
 }
 
+/* Theory Summary Box */
+.theory-box {
+  width: 100%;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.theory-text {
+  font-style: italic;
+  color: var(--paper-white);
+  margin-top: 2px;
+}
+
+/* HUD Actions Container */
+.hud-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-highlight {
+  background: var(--paper-white);
+  color: var(--ink-black);
+  border: 2px solid #000;
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0px var(--paper-white); }
+  50% { box-shadow: 0 0 8px var(--paper-white); }
+}
+
+/* Reconstruction Overlay Modal */
+.reconstruct-content {
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  gap: 10px;
+}
+
+.evidence-badges-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.evidence-badge {
+  background: var(--paper-white);
+  color: var(--ink-black);
+  border: 1px solid #000;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  font-family: var(--font-headline);
+  letter-spacing: 1px;
+}
+
+.reconstruct-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.question-card {
+  background: var(--ink-mid);
+  border: 2px solid var(--paper-white);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.question-title {
+  font-family: var(--font-headline);
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  color: var(--paper-white);
+  border-bottom: 1px dashed var(--paper-white);
+  padding-bottom: 4px;
+}
+
+.question-ref {
+  font-size: 0.75rem;
+  color: var(--paper-tint);
+  font-style: italic;
+}
+
+.options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-btn {
+  background: var(--ink-black);
+  color: var(--paper-white);
+  border: 2px solid var(--paper-white);
+  padding: 8px 10px;
+  font-family: var(--font-headline);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.option-btn:hover {
+  border-color: #ffffff;
+  background: #181820;
+}
+
+.option-btn.selected {
+  background: var(--paper-white);
+  color: var(--ink-black);
+  border-color: #000;
+  box-shadow: var(--shadow-comic-sm);
+  font-weight: bold;
+}
+
 /* Mobile D-Pad Controls */
 .mobile-dpad {
   display: none;
