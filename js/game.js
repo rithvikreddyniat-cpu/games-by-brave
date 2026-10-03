@@ -148,14 +148,18 @@ export class Game {
           this.acceptTwist();
         } else if (e.code === 'KeyC') {
           e.preventDefault();
-          this.toggleCaseBoard();
+          if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
+            this.toggleCaseBoard();
+          }
         } else if (e.code === 'KeyR') {
           e.preventDefault();
-          const stats = this.clueSystem.getStats();
-          if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
-            this.toggleSecondReconstructionModal();
-          } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
-            this.toggleReconstructionModal();
+          if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
+            const stats = this.clueSystem.getStats();
+            if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
+              this.toggleSecondReconstructionModal();
+            } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
+              this.toggleReconstructionModal();
+            }
           }
         } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
           this.dismissToast();
@@ -313,12 +317,17 @@ export class Game {
     requestAnimationFrame((timestamp) => this.loop(timestamp));
   }
 
+  isOverlayOpen() {
+    return [this.modalCaseboard, this.modalReconstruction, this.modalSecondReconstruction, this.screenTwist]
+      .some(el => el && !el.classList.contains('hidden'));
+  }
+
   loop(timestamp) {
     try {
       const deltaTime = timestamp - this.lastFrameTime;
       this.lastFrameTime = timestamp;
 
-      if (this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) {
+      if ((this.state === GAME_STATES.PLAYING || this.state === GAME_STATES.INK_PHASE) && !this.isOverlayOpen()) {
         this.accumulator += deltaTime;
 
         // Update grid step when accumulator reaches tick interval
@@ -326,6 +335,8 @@ export class Game {
           this.tick();
           this.accumulator -= CONFIG.TICK_INTERVAL_MS;
         }
+      } else if (this.isOverlayOpen()) {
+        this.accumulator = 0;
       }
 
       // Render frame
@@ -686,7 +697,9 @@ export class Game {
       this.screenTwist.classList.add('hidden');
       this.screenTwist.classList.remove('active');
     }
-    this.setState(GAME_STATES.INK_PHASE);
+    if (this.state === GAME_STATES.PLAYING) {
+      this.setState(GAME_STATES.INK_PHASE);
+    }
   }
 
   updateHUDClues() {
