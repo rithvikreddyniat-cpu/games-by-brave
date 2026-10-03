@@ -377,9 +377,30 @@ export class Game {
     }
   }
 
+  showComicImpact(text) {
+    const frame = document.getElementById('panel-frame');
+    if (!frame) return;
+
+    const popup = document.createElement('div');
+    popup.className = 'action-impact-popup';
+    popup.textContent = text;
+    
+    // Random position offset inside panel frame
+    const top = 30 + Math.random() * 40;
+    const left = 30 + Math.random() * 40;
+    popup.style.top = `${top}%`;
+    popup.style.left = `${left}%`;
+
+    frame.appendChild(popup);
+
+    setTimeout(() => {
+      if (popup.parentNode) popup.parentNode.removeChild(popup);
+    }, 600);
+  }
+
   showToast(clue, isErased = false) {
-    if (!this.evidenceToast) return;
     if (isErased) {
+      this.showComicImpact('POW!');
       if (this.toastBadge) {
         this.toastBadge.textContent = 'EVIDENCE ERASED';
         this.toastBadge.className = 'toast-badge erased';
@@ -387,6 +408,7 @@ export class Game {
       this.toastTitle.textContent = clue.name.toUpperCase();
       this.toastDesc.textContent = `"Dark ink covers ${clue.name}. The evidence has been erased!"`;
     } else {
+      this.showComicImpact('CLUE!');
       if (this.toastBadge) {
         this.toastBadge.textContent = 'EVIDENCE FOUND';
         this.toastBadge.className = 'toast-badge';
@@ -394,7 +416,9 @@ export class Game {
       this.toastTitle.textContent = clue.name.toUpperCase();
       this.toastDesc.textContent = `"${clue.description}"`;
     }
-    this.evidenceToast.classList.remove('hidden');
+    if (this.evidenceToast) {
+      this.evidenceToast.classList.remove('hidden');
+    }
   }
 
   dismissToast() {
