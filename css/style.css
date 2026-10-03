@@ -493,25 +493,49 @@ canvas#game-canvas {
 
 /* Reconstruction Overlay Modal */
 .reconstruct-content {
-  max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
-  gap: 10px;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  gap: 6px;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.reconstruct-content .noir-heading {
+  flex-shrink: 0;
+  font-size: 1.6rem;
+  padding-bottom: 2px;
+}
+
+.reconstruct-content .impact-text.text-sm {
+  flex-shrink: 0;
+  font-size: 1.3rem;
+  padding: 2px 8px;
+}
+
+.reconstruct-content .narration-box {
+  display: none;
 }
 
 .evidence-badges-bar {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .evidence-badge {
   background: var(--paper-white);
   color: var(--ink-black);
   border: 1px solid #000;
-  padding: 3px 8px;
+  padding: 2px 6px;
   font-size: 0.75rem;
   font-weight: bold;
   font-family: var(--font-headline);
@@ -519,50 +543,74 @@ canvas#game-canvas {
 }
 
 .reconstruct-questions {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #f5f3eb #24242c;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.reconstruct-questions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reconstruct-questions::-webkit-scrollbar-track {
+  background: #24242c;
+}
+
+.reconstruct-questions::-webkit-scrollbar-thumb {
+  background: #f5f3eb;
 }
 
 .question-card {
   background: var(--ink-mid);
   border: 2px solid var(--paper-white);
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   text-align: left;
 }
 
 .question-title {
   font-family: var(--font-headline);
-  font-size: 1.1rem;
+  font-size: 1rem;
   letter-spacing: 1px;
   color: var(--paper-white);
   border-bottom: 1px dashed var(--paper-white);
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 
 .question-ref {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--paper-tint);
   font-style: italic;
 }
 
 .options-group {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
+  width: 100%;
+}
+
+@media (max-width: 500px) {
+  .options-group {
+    grid-template-columns: 1fr;
+  }
 }
 
 .option-btn {
   background: var(--ink-black);
   color: var(--paper-white);
   border: 2px solid var(--paper-white);
-  padding: 8px 10px;
+  padding: 6px 8px;
   font-family: var(--font-headline);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   letter-spacing: 1px;
   cursor: pointer;
   text-align: left;
@@ -580,6 +628,14 @@ canvas#game-canvas {
   border-color: #000;
   box-shadow: var(--shadow-comic-sm);
   font-weight: bold;
+}
+
+.reconstruct-content .comic-btn {
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 16px;
+  font-size: 1.3rem;
 }
 
 /* Twist Interruption Modal & Comic Impact */

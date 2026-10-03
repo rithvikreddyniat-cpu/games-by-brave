@@ -94,9 +94,23 @@ export class Game {
     this.accumulator = 0;
     this.inkStepsCount = 0;
     this.deathWasInkPhase = false;
+    this.inkCheckpoint = null;
 
     this.initEventListeners();
     this.setState(GAME_STATES.TITLE);
+  }
+
+  getFreeCellsCount() {
+    const currentCase = CASES[this.currentCaseIndex];
+    if (!currentCase || !currentCase.walls) return 400;
+    let wallCount = 0;
+    for (let r = 0; r < currentCase.walls.length; r++) {
+      const rowStr = currentCase.walls[r];
+      for (let c = 0; c < rowStr.length; c++) {
+        if (rowStr[c] === '#') wallCount++;
+      }
+    }
+    return 400 - wallCount;
   }
 
   initEventListeners() {
@@ -129,8 +143,14 @@ export class Game {
     // M4 & M6 Reconstruction Modal controls
     if (this.btnOpenReconstruct) {
       this.btnOpenReconstruct.addEventListener('click', () => {
+        const currentCase = CASES[this.currentCaseIndex];
         if (this.state === GAME_STATES.INK_PHASE) {
-          this.toggleSecondReconstructionModal();
+          const freeCells = this.getFreeCellsCount();
+          const coverage = this.renderer.inkSystem.getCoverage(freeCells);
+          const goal = currentCase ? (currentCase.inkGoal || 0.5) : 0.5;
+          if (this.reconstructionSystem.isSecondUnlocked(coverage, goal)) {
+            this.toggleSecondReconstructionModal();
+          }
         } else {
           this.toggleReconstructionModal();
         }
@@ -183,9 +203,15 @@ export class Game {
         } else if (e.code === 'KeyR') {
           e.preventDefault();
           if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
+            const currentCase = CASES[this.currentCaseIndex];
             const stats = this.clueSystem.getStats();
-            if (this.state === GAME_STATES.INK_PHASE && this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
-              this.toggleSecondReconstructionModal();
+            if (this.state === GAME_STATES.INK_PHASE) {
+              const freeCells = this.getFreeCellsCount();
+              const coverage = this.renderer.inkSystem.getCoverage(freeCells);
+              const goal = currentCase ? (currentCase.inkGoal || 0.5) : 0.5;
+              if (this.reconstructionSystem.isSecondUnlocked(coverage, goal)) {
+                this.toggleSecondReconstructionModal();
+              }
             } else if (this.reconstructionSystem.isUnlocked(stats.collected)) {
               this.toggleReconstructionModal();
             }
@@ -269,6 +295,7 @@ export class Game {
         this.showScreen(null);
         if (this.hudStatus) this.hudStatus.textContent = this.reconstructionSystem.isSecondSubmitted ? 'RECONSTRUCTION COMPLETE' : 'INK ERASURE';
         if (this.panelTag) this.panelTag.textContent = 'PANEL #03: THE REVERSAL';
+        this.updateHUDClues();
         break;
 
       case GAME_STATES.REVELATION:
@@ -281,6 +308,15 @@ export class Game {
         this.showScreen('screen-game-over');
         if (this.hudStatus) this.hudStatus.textContent = 'CASE CLOSED';
         
+        const gameOverNarration = this.screenGameOver ? this.screenGameOver.querySelector('.narration-box') : null;
+        if (gameOverNarration) {
+          if (this.deathWasInkPhase) {
+            gameOverNarration.textContent = '"THE PANEL RAN OUT OF ROOM. THE INK STARTS AGAIN."';
+          } else {
+            gameOverNarration.textContent = '"A dead end. The panel collapsed before the truth could surface..."';
+          }
+        }
+
         const stats = this.clueSystem.getStats();
         if (this.finalCluesVal) {
           this.finalCluesVal.textContent = `${stats.collected} / ${stats.total} (ERASED: ${stats.lost})`;
@@ -335,6 +371,7 @@ export class Game {
     this.inkStepsCount = 0;
     this.currentRevSlide = 0;
     this.deathWasInkPhase = false;
+    this.inkCheckpoint = null;
 
     this.dismissToast();
     this.toggleCaseBoard(false);
@@ -350,7 +387,32 @@ export class Game {
   }
 
   restartGame() {
-    this.startCase(this.currentCaseIndex);
+    if (this.deathWasInkPhase && this.inkCheckpoint) {
+      // Restore clue states from checkpoint
+      this.clueSystem.clues = JSON.parse(JSON.stringify(this.inkCheckpoint.clues));
+      // Reset snake to checkpoint start (initial length 5)
+      this.snake.reset(this.inkCheckpoint.snakeStart);
+      // Clear ink grid and inkedCount
+      this.renderer.inkSystem.reset();
+      // Reset second reconstruction flags
+      this.reconstructionSystem.secondAutoPromptTriggered = false;
+      this.reconstructionSystem.isSecondSubmitted = false;
+      this.reconstructionSystem.secondSelectedChoices = {};
+      if (this.btnOpenReconstruct) {
+        this.btnOpenReconstruct.classList.add('hidden');
+      }
+      this.accumulator = 0;
+      this.inkStepsCount = 0;
+      this.inputHandler.reset();
+      this.dismissToast();
+      this.toggleCaseBoard(false);
+      this.toggleReconstructionModal(false);
+      this.toggleSecondReconstructionModal(false);
+      this.updateHUDClues();
+      this.setState(GAME_STATES.INK_PHASE);
+    } else {
+      this.startCase(this.currentCaseIndex);
+    }
   }
 
   nextCase() {
@@ -410,13 +472,19 @@ export class Game {
 
       // Render frame
       const currentCase = CASES[this.currentCaseIndex];
+      const freeCells = this.getFreeCellsCount();
+      const coverageRatio = this.renderer.inkSystem.getCoverage(freeCells);
+      const inkGoal = currentCase ? (currentCase.inkGoal || 0.5) : 0.5;
+
       this.renderer.render(
         this.snake,
         this.renderer.lightSystem,
         this.clueSystem,
         this.state,
         this.deathWasInkPhase,
-        currentCase ? currentCase.walls : null
+        currentCase ? currentCase.walls : null,
+        coverageRatio,
+        inkGoal
       );
     } catch (err) {
       console.error(err);
@@ -442,23 +510,29 @@ export class Game {
     if (isInkPhase) {
       this.inkStepsCount++;
 
-      // Deposit persistent dark ink onto current snake positions
-      this.renderer.inkSystem.depositInk(this.snake);
+      // Deposit persistent dark ink onto current snake positions (ignoring wall cells)
+      this.renderer.inkSystem.depositInk(this.snake, currentCase ? currentCase.walls : null);
+
+      const freeCells = this.getFreeCellsCount();
+      const coverage = this.renderer.inkSystem.getCoverage(freeCells);
+      const goal = currentCase ? (currentCase.inkGoal || 0.5) : 0.5;
 
       // Check evidence ink erasure
       const res = this.clueSystem.update(this.snake, null, true);
       const stats = this.clueSystem.getStats();
-      const willSecondAutoOpen = this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost) && !this.reconstructionSystem.secondAutoPromptTriggered;
+      const willSecondAutoOpen = this.reconstructionSystem.isSecondUnlocked(coverage, goal) && !this.reconstructionSystem.secondAutoPromptTriggered;
 
       if (res && res.type === 'ERASED') {
         if (!willSecondAutoOpen) {
           this.showToast(res.clue, true);
         }
         this.updateHUDClues();
+      } else {
+        this.updateHUDClues();
       }
 
       // M6 Second Reconstruction Trigger Check
-      if (this.reconstructionSystem.isSecondUnlocked(this.inkStepsCount, stats.lost)) {
+      if (this.reconstructionSystem.isSecondUnlocked(coverage, goal)) {
         if (this.btnOpenReconstruct) {
           this.btnOpenReconstruct.classList.remove('hidden');
         }
@@ -810,6 +884,29 @@ export class Game {
   }
 
   acceptTwist() {
+    const currentCase = CASES[this.currentCaseIndex];
+    if (currentCase) {
+      this.snake.reset(currentCase.snakeStart);
+    }
+    this.renderer.inkSystem.reset();
+
+    this.inkCheckpoint = {
+      clues: JSON.parse(JSON.stringify(this.clueSystem.clues)),
+      snakeStart: currentCase ? { ...currentCase.snakeStart } : { x: 5, y: 18, dir: 'RIGHT' }
+    };
+
+    this.reconstructionSystem.secondAutoPromptTriggered = false;
+    this.reconstructionSystem.isSecondSubmitted = false;
+    this.reconstructionSystem.secondSelectedChoices = {};
+    if (this.btnOpenReconstruct) {
+      this.btnOpenReconstruct.classList.add('hidden');
+    }
+    this.accumulator = 0;
+    this.inkStepsCount = 0;
+    this.inputHandler.reset();
+    this.dismissToast();
+    this.updateHUDClues();
+
     this.setState(GAME_STATES.INK_PHASE);
   }
 
@@ -823,8 +920,13 @@ export class Game {
     }
 
     if (this.hudClues) {
-      if (this.state === GAME_STATES.INK_PHASE && stats.lost > 0) {
-        this.hudClues.textContent = `${stats.collected}/${required} (ERASED: ${stats.lost})`;
+      if (this.state === GAME_STATES.INK_PHASE) {
+        const freeCells = this.getFreeCellsCount();
+        const coverage = this.renderer.inkSystem.getCoverage(freeCells);
+        const goal = currentCase ? (currentCase.inkGoal || 0.5) : 0.5;
+        const inkPct = Math.floor(coverage * 100);
+        const goalPct = Math.round(goal * 100);
+        this.hudClues.textContent = `INK ${inkPct}% / ${goalPct}%  |  LOST ${stats.lost}`;
       } else {
         this.hudClues.textContent = `${stats.collected}/${required}`;
       }

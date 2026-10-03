@@ -13,21 +13,38 @@ export class InkSystem {
   reset() {
     // 2D grid matrix recording persistent ink coverage
     this.inkGrid = Array.from({ length: this.rows }, () => Array(this.cols).fill(false));
+    this.inkedCount = 0;
   }
 
   /**
    * Deposit dark ink onto current snake position
    * @param {Object} snake - Snake instance
+   * @param {Array<string>} walls - Optional case walls
    */
-  depositInk(snake) {
+  depositInk(snake, walls = null) {
     if (!snake || !snake.body) return;
 
     // Deposit ink under all current snake segments
     for (const seg of snake.body) {
       if (seg.x >= 0 && seg.x < this.cols && seg.y >= 0 && seg.y < this.rows) {
-        this.inkGrid[seg.y][seg.x] = true;
+        if (walls && walls[seg.y] && walls[seg.y][seg.x] === '#') {
+          continue; // Do not count wall cells
+        }
+        if (!this.inkGrid[seg.y][seg.x]) {
+          this.inkGrid[seg.y][seg.x] = true;
+          this.inkedCount++;
+        }
       }
     }
+  }
+
+  /**
+   * Get current ink coverage ratio (0.0 to 1.0)
+   * @param {number} freeCells - Total number of non-wall cells
+   */
+  getCoverage(freeCells) {
+    if (!freeCells || freeCells <= 0) return 0;
+    return this.inkedCount / freeCells;
   }
 
   /**

@@ -316,6 +316,7 @@ export const CASES = [
     lightScale: 0.75,
     tickMs: 120,
     hasTwist: true,
+    inkGoal: 0.5,
     questions: [
       {
         id: 'panel_when',

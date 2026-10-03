@@ -87,8 +87,8 @@ export class ReconstructionSystem {
   /**
    * Check if second theory reconstruction is available during INK_PHASE
    */
-  isSecondUnlocked(inkStepsCount, lostCount) {
-    return inkStepsCount >= this.requiredInkStepsThreshold || lostCount > 0;
+  isSecondUnlocked(coverage, inkGoal = 0.5) {
+    return coverage >= inkGoal;
   }
 
   isAllAnswered() {

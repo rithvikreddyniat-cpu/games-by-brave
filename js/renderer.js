@@ -39,7 +39,7 @@ export class Renderer {
   /**
    * Main render method called every frame
    */
-  render(snake, lightSystem, clueSystem, gameState, deathWasInkPhase = false, walls = null) {
+  render(snake, lightSystem, clueSystem, gameState, deathWasInkPhase = false, walls = null, coverageRatio = 0, inkGoal = 0.5) {
     if (!this.ctx) return;
     const isInkPhase = (gameState === GAME_STATES.INK_PHASE) || (gameState === GAME_STATES.GAME_OVER && deathWasInkPhase);
 
@@ -57,6 +57,16 @@ export class Renderer {
 
       if (snake) {
         this.drawSnake(snake, true);
+      }
+
+      // Draw 10px progress bar along the top inside canvas border
+      if (inkGoal > 0) {
+        const fillRatio = Math.min(1.0, Math.max(0, coverageRatio / inkGoal));
+        const barWidth = this.width * fillRatio;
+        this.ctx.save();
+        this.ctx.fillStyle = '#08080a';
+        this.ctx.fillRect(0, 0, barWidth, 10);
+        this.ctx.restore();
       }
     } else {
       // --- LIGHT PHASE: Pitch Darkness & Moving Light Pools ---
