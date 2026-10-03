@@ -25,7 +25,7 @@ export const CONFIG = {
   GRID_COLS: 20,
   GRID_ROWS: 20,
   CELL_SIZE: 36, // Logical canvas internal dimensions: 720px x 720px
-  INITIAL_SNAKE_LENGTH: 4,
+  INITIAL_SNAKE_LENGTH: 5,
   TICK_INTERVAL_MS: 120, // Milliseconds per grid move
   
   // Theme styling colors for Renderer

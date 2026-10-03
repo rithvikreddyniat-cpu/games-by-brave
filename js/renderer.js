@@ -93,8 +93,12 @@ export class Renderer {
     // 2. Draw Snake Head (Detective Motif)
     if (body.length > 0) {
       const head = body[0];
-      const hX = head.x * this.cellSize;
-      const hY = head.y * this.cellSize;
+      // Clamp coordinates for dead head if wall collision occurred
+      const clampedX = Math.max(0, Math.min(head.x, this.cols - 1));
+      const clampedY = Math.max(0, Math.min(head.y, this.rows - 1));
+
+      const hX = clampedX * this.cellSize;
+      const hY = clampedY * this.cellSize;
       const pad = 1;
       const hSize = this.cellSize - pad * 2;
 

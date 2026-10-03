@@ -1,6 +1,7 @@
 {
   "name": "snake-noir",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "description": "Snake Noir — The Unprinted Panel (Browser Game)",
   "scripts": {

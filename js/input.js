@@ -42,10 +42,11 @@ export class InputHandler {
   }
 
   initKeyboard() {
+    if (typeof window === 'undefined') return;
     window.addEventListener('keydown', (e) => {
       // Prevent default page scrolling for game controls
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Space', 'Enter', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) || ['Space', ' '].includes(e.key)) {
-        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+        if (e.target && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
           e.preventDefault();
         }
       }
@@ -81,25 +82,24 @@ export class InputHandler {
   }
 
   initTouchControls() {
-    // Touch D-Pad buttons
+    if (typeof document === 'undefined') return;
+    // Touch D-Pad buttons with clean single event handling
     const dpadButtons = document.querySelectorAll('.dpad-btn');
     dpadButtons.forEach((btn) => {
       const dir = btn.getAttribute('data-dir');
       if (dir) {
-        btn.addEventListener('touchstart', (e) => {
+        const handleTrigger = (e) => {
           e.preventDefault();
           this.enqueueDirection(dir);
-        }, { passive: false });
+        };
 
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          this.enqueueDirection(dir);
-        });
+        btn.addEventListener('pointerdown', handleTrigger);
       }
     });
   }
 
   initSwipe() {
+    if (typeof document === 'undefined') return;
     let touchStartX = 0;
     let touchStartY = 0;
     const canvas = document.getElementById('game-canvas');
