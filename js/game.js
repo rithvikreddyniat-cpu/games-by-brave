@@ -104,6 +104,10 @@ export class Game {
     this.btnMute = document.getElementById('btn-mute');
     this.updateMuteUI();
 
+    if (import.meta.env && import.meta.env.DEV) {
+      console.log('[DEV] F1=Case 1, F2=Case 2, F3=Case 3');
+    }
+
     this.initEventListeners();
     this.setState(GAME_STATES.TITLE);
   }
@@ -205,6 +209,16 @@ export class Game {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
         sfx.unlock();
+        if (import.meta.env && import.meta.env.DEV) {
+          if (e.code === 'F1' || e.code === 'F2' || e.code === 'F3') {
+            e.preventDefault();
+            const targetIndex = e.code === 'F1' ? 0 : (e.code === 'F2' ? 1 : 2);
+            sfx.click();
+            this.showCaseIntro(targetIndex);
+            return;
+          }
+        }
+
         if (e.code === 'KeyM') {
           e.preventDefault();
           sfx.click();
@@ -214,39 +228,47 @@ export class Game {
         }
         if (e.code === 'Space' || e.code === 'Enter') {
           if (e.repeat) return;
-          sfx.click();
+
+          let actionTriggered = false;
 
           if (this.state === GAME_STATES.TITLE) {
-            e.preventDefault();
             this.startGame();
+            actionTriggered = true;
           } else if (this.screenCaseIntro && !this.screenCaseIntro.classList.contains('hidden')) {
-            e.preventDefault();
             this.startCase(this.currentCaseIndex);
+            actionTriggered = true;
           } else if (this.screenCaseSolved && !this.screenCaseSolved.classList.contains('hidden')) {
-            e.preventDefault();
             this.nextCase();
+            actionTriggered = true;
           } else if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden')) {
-            e.preventDefault();
             if (this.currentRevSlide < this.revSlides.length - 1) {
               this.nextRevelationPanel();
             } else {
               this.startGame();
             }
+            actionTriggered = true;
           } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden')) {
-            e.preventDefault();
             this.acceptTwist();
+            actionTriggered = true;
           } else if (this.state === GAME_STATES.GAME_OVER) {
-            e.preventDefault();
             this.restartGame();
+            actionTriggered = true;
           } else if (this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
-            e.preventDefault();
             this.dismissToast();
+            actionTriggered = true;
           } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
-            e.preventDefault();
             this.confirmTheorySelection();
+            actionTriggered = true;
           } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
-            e.preventDefault();
             this.confirmSecondTheorySelection();
+            actionTriggered = true;
+          }
+
+          if (actionTriggered) {
+            e.preventDefault();
+            sfx.click();
+          } else {
+            e.preventDefault();
           }
         } else if (e.code === 'KeyC') {
           e.preventDefault();
@@ -540,6 +562,10 @@ export class Game {
         while (this.accumulator >= tickMs) {
           this.tick();
           this.accumulator -= tickMs;
+          if (this.isOverlayOpen()) {
+            this.accumulator = 0;
+            break;
+          }
         }
       } else if (this.isOverlayOpen()) {
         this.accumulator = 0;
