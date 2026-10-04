@@ -5,6 +5,7 @@ import { Renderer } from './renderer.js';
 import { ClueSystem } from './clueSystem.js';
 import { ReconstructionSystem } from './reconstructionSystem.js';
 import { CASES } from './cases.js';
+import { sfx } from './audio.js';
 
 export class Game {
   constructor() {
@@ -13,6 +14,7 @@ export class Game {
 
     // DOM Elements
     this.canvas = document.getElementById('game-canvas');
+    this.panelFrame = document.getElementById('panel-frame');
     this.panelTag = document.getElementById('panel-tag');
     this.screenTitle = document.getElementById('screen-title');
     this.screenGameOver = document.getElementById('screen-game-over');
@@ -95,9 +97,21 @@ export class Game {
     this.inkStepsCount = 0;
     this.deathWasInkPhase = false;
     this.inkCheckpoint = null;
+    this.retriesCount = 0;
+    this.gameStartTime = null;
+    this.gameEndTime = null;
+
+    this.btnMute = document.getElementById('btn-mute');
+    this.updateMuteUI();
 
     this.initEventListeners();
     this.setState(GAME_STATES.TITLE);
+  }
+
+  updateMuteUI() {
+    if (this.btnMute) {
+      this.btnMute.textContent = sfx.isMuted ? '🔇 [M]' : '🔊 [M]';
+    }
   }
 
   getFreeCellsCount() {
@@ -114,35 +128,46 @@ export class Game {
   }
 
   initEventListeners() {
+    if (this.btnMute) {
+      this.btnMute.addEventListener('click', () => {
+        sfx.unlock();
+        sfx.click();
+        sfx.toggleMute();
+        this.updateMuteUI();
+      });
+    }
+
     if (this.btnStart) {
-      this.btnStart.addEventListener('click', () => this.handleActionTrigger());
+      this.btnStart.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.handleActionTrigger(); });
     }
     if (this.btnRestart) {
-      this.btnRestart.addEventListener('click', () => this.handleActionTrigger());
+      this.btnRestart.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.handleActionTrigger(); });
     }
     
     // Case Intro & Solved controls
     if (this.btnBeginCase) {
-      this.btnBeginCase.addEventListener('click', () => this.startCase(this.currentCaseIndex));
+      this.btnBeginCase.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.startCase(this.currentCaseIndex); });
     }
     if (this.btnNextCase) {
-      this.btnNextCase.addEventListener('click', () => this.nextCase());
+      this.btnNextCase.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.nextCase(); });
     }
 
     // Case Board Modal controls
     if (this.btnOpenCaseboard) {
-      this.btnOpenCaseboard.addEventListener('click', () => this.toggleCaseBoard());
+      this.btnOpenCaseboard.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.toggleCaseBoard(); });
     }
     if (this.btnCloseCaseboard) {
-      this.btnCloseCaseboard.addEventListener('click', () => this.toggleCaseBoard(false));
+      this.btnCloseCaseboard.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.toggleCaseBoard(false); });
     }
     if (this.btnToastDismiss) {
-      this.btnToastDismiss.addEventListener('click', () => this.dismissToast());
+      this.btnToastDismiss.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.dismissToast(); });
     }
 
     // M4 & M6 Reconstruction Modal controls
     if (this.btnOpenReconstruct) {
       this.btnOpenReconstruct.addEventListener('click', () => {
+        sfx.unlock();
+        sfx.click();
         const currentCase = CASES[this.currentCaseIndex];
         if (this.state === GAME_STATES.INK_PHASE) {
           const freeCells = this.getFreeCellsCount();
@@ -157,30 +182,39 @@ export class Game {
       });
     }
     if (this.btnConfirmTheory) {
-      this.btnConfirmTheory.addEventListener('click', () => this.confirmTheorySelection());
+      this.btnConfirmTheory.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.confirmTheorySelection(); });
     }
     if (this.btnConfirmSecondTheory) {
-      this.btnConfirmSecondTheory.addEventListener('click', () => this.confirmSecondTheorySelection());
+      this.btnConfirmSecondTheory.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.confirmSecondTheorySelection(); });
     }
 
     // M5 Twist Interruption Modal controls
     if (this.btnAcceptTwist) {
-      this.btnAcceptTwist.addEventListener('click', () => this.acceptTwist());
+      this.btnAcceptTwist.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.acceptTwist(); });
     }
 
     // M7 Revelation Sequence controls
     if (this.btnNextPanel) {
-      this.btnNextPanel.addEventListener('click', () => this.nextRevelationPanel());
+      this.btnNextPanel.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.nextRevelationPanel(); });
     }
     if (this.btnPlayAgain) {
-      this.btnPlayAgain.addEventListener('click', () => this.startGame());
+      this.btnPlayAgain.addEventListener('click', () => { sfx.unlock(); sfx.click(); this.startGame(); });
     }
 
     // Keyboard listener for shortcuts and actions
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
+        sfx.unlock();
+        if (e.code === 'KeyM') {
+          e.preventDefault();
+          sfx.click();
+          sfx.toggleMute();
+          this.updateMuteUI();
+          return;
+        }
         if (e.code === 'Space' || e.code === 'Enter') {
           if (e.repeat) return;
+          sfx.click();
 
           if (this.state === GAME_STATES.TITLE) {
             e.preventDefault();
@@ -216,11 +250,13 @@ export class Game {
           }
         } else if (e.code === 'KeyC') {
           e.preventDefault();
+          sfx.click();
           if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
             this.toggleCaseBoard();
           }
         } else if (e.code === 'KeyR') {
           e.preventDefault();
+          sfx.click();
           if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
             const currentCase = CASES[this.currentCaseIndex];
             const stats = this.clueSystem.getStats();
@@ -278,6 +314,11 @@ export class Game {
   setState(newState) {
     this.state = newState;
     const currentCase = CASES[this.currentCaseIndex];
+
+    const frameEl = this.panelFrame || document.getElementById('panel-frame');
+    if (frameEl) {
+      frameEl.scrollTop = 0;
+    }
 
     switch (newState) {
       case GAME_STATES.TITLE:
@@ -353,6 +394,9 @@ export class Game {
 
   startGame() {
     this.currentCaseIndex = 0;
+    this.retriesCount = 0;
+    this.gameStartTime = null;
+    this.gameEndTime = null;
     this.showCaseIntro(0);
   }
 
@@ -374,6 +418,10 @@ export class Game {
   startCase(caseIndex) {
     this.currentCaseIndex = caseIndex;
     const c = CASES[caseIndex];
+
+    if (caseIndex === 0 && !this.gameStartTime) {
+      this.gameStartTime = performance.now();
+    }
 
     this.snake.reset(c.snakeStart);
     this.clueSystem.reset(c.clues);
@@ -397,6 +445,10 @@ export class Game {
       this.btnOpenReconstruct.classList.add('hidden');
     }
     this.updateHUDClues();
+
+    if (this.state !== GAME_STATES.INK_PHASE) {
+      sfx.rainStart();
+    }
 
     this.setState(GAME_STATES.PLAYING);
   }
@@ -424,6 +476,7 @@ export class Game {
       this.toggleReconstructionModal(false);
       this.toggleSecondReconstructionModal(false);
       this.updateHUDClues();
+      sfx.inkHumStart();
       this.setState(GAME_STATES.INK_PHASE);
     } else {
       this.startCase(this.currentCaseIndex);
@@ -440,6 +493,8 @@ export class Game {
   }
 
   showCaseSolved() {
+    sfx.rainStop(0.5);
+    sfx.caseSolved();
     const c = CASES[this.currentCaseIndex];
     if (this.caseSolvedTitle) {
       this.caseSolvedTitle.textContent = `${c.title} SOLVED!`;
@@ -456,6 +511,10 @@ export class Game {
   }
 
   isOverlayOpen() {
+    const rotateHint = document.getElementById('rotate-hint');
+    if (rotateHint && typeof window !== 'undefined' && window.getComputedStyle(rotateHint).display !== 'none') {
+      return true;
+    }
     return [
       this.modalCaseboard,
       this.modalReconstruction,
@@ -538,6 +597,7 @@ export class Game {
       const willSecondAutoOpen = this.reconstructionSystem.isSecondUnlocked(coverage, goal) && !this.reconstructionSystem.secondAutoPromptTriggered;
 
       if (res && res.type === 'ERASED') {
+        sfx.erase();
         if (!willSecondAutoOpen) {
           this.showToast(res.clue, true);
         }
@@ -566,6 +626,7 @@ export class Game {
       if (res && res.type === 'COLLECTED') {
         // Snake grows by 1 segment each time a clue is collected in light phase
         this.snake.grow();
+        sfx.clue();
 
         if (!willAutoOpen) {
           this.showToast(res.clue, false);
@@ -591,9 +652,13 @@ export class Game {
     // Check collisions against boundary, interior walls, and self
     if (this.snake.checkWallCollision(currentCase ? currentCase.walls : null) || this.snake.checkSelfCollision()) {
       this.snake.isDead = true;
+      this.retriesCount++;
       if (this.state === GAME_STATES.INK_PHASE) {
         this.deathWasInkPhase = true;
       }
+      sfx.rainStop(0.3);
+      sfx.inkHumStop(0.3);
+      sfx.death();
       this.setState(GAME_STATES.GAME_OVER);
     }
   }
@@ -866,6 +931,9 @@ export class Game {
     const currentCase = CASES[this.currentCaseIndex];
     if (currentCase && currentCase.hasTwist) {
       // M5 Trigger Rule Reversal Twist Interruption! (Case 3)
+      sfx.rainStop(0.5);
+      sfx.twist();
+      sfx.inkHumStart();
       this.showScreen('screen-twist');
     } else {
       // Cases 1 & 2: Show Case Solved card
@@ -882,7 +950,128 @@ export class Game {
     this.startRevelationSequence();
   }
 
+  formatElapsedTime() {
+    const start = this.gameStartTime || performance.now();
+    const end = this.gameEndTime || performance.now();
+    const totalSec = Math.floor(Math.max(0, end - start) / 1000);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  getSeenEndings() {
+    try {
+      const raw = localStorage.getItem('snakeNoirEndings');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      console.warn(e);
+    }
+    return [];
+  }
+
+  recordEndingSeen(endingId) {
+    try {
+      const seen = this.getSeenEndings();
+      if (!seen.includes(endingId)) {
+        seen.push(endingId);
+        localStorage.setItem('snakeNoirEndings', JSON.stringify(seen));
+      }
+      return seen;
+    } catch (e) {
+      console.warn(e);
+      return [endingId];
+    }
+  }
+
   startRevelationSequence() {
+    sfx.rainStop(0.5);
+    sfx.inkHumStop(0.5);
+    this.gameEndTime = performance.now();
+
+    const lighter = this.clueSystem.clues.find(c => c.id === 'ds_lighter');
+    const badge = this.clueSystem.clues.find(c => c.id === 'detective_badge');
+
+    const lighterSurvived = lighter && !lighter.isLost;
+    const badgeSurvived = badge && !badge.isLost;
+
+    let endingId = 'ending1';
+    let endingLabel = 'ENDING 1 OF 3: THE TRUTH';
+    let slide1Text = 'The ink missed what mattered. Two pieces of evidence survived the page.';
+    let slide2Text = "A silver lighter stamped 'D.S.' and a badge with the number scratched out.";
+    let slide3Narration = 'Someone was here... YOU.';
+    let slide3Speech = '...Oh.';
+    let slide4Narration = 'Detective Snake was the intruder all along. The investigation was the crime.';
+
+    if (lighterSurvived && badgeSurvived) {
+      endingId = 'ending1';
+      endingLabel = 'ENDING 1 OF 3: THE TRUTH';
+      slide1Text = 'The ink missed what mattered. Two pieces of evidence survived the page.';
+      slide2Text = "A silver lighter stamped 'D.S.' and a badge with the number scratched out.";
+      slide3Narration = 'Someone was here... YOU.';
+      slide3Speech = '...Oh.';
+      slide4Narration = 'Detective Snake was the intruder all along. The investigation was the crime.';
+    } else if (lighterSurvived || badgeSurvived) {
+      endingId = 'ending2';
+      endingLabel = 'ENDING 2 OF 3: THE DOUBT';
+      slide1Text = 'The ink swallowed half the story. One piece of evidence survived.';
+      if (lighterSurvived) {
+        slide2Text = "Only the lighter stamped 'D.S.' is left. Initials aren't proof.";
+      } else {
+        slide2Text = "Only the badge is left, its number scratched out. A scratch isn't proof.";
+      }
+      slide3Narration = 'Someone was here... maybe YOU.';
+      slide3Speech = '...Oh?';
+      slide4Narration = 'It might have been you. The page will not say.';
+    } else {
+      endingId = 'ending3';
+      endingLabel = 'ENDING 3 OF 3: THE COVER-UP';
+      slide1Text = 'The ink erased everything that could name the culprit.';
+      slide2Text = 'No lighter. No badge. Only black ink, and the hand that spread it.';
+      slide3Narration = 'Someone was here... and covered it up.';
+      slide3Speech = '...Me?';
+      slide4Narration = 'The case is closed because you closed it. The ink is yours.';
+    }
+
+    const seenEndings = this.recordEndingSeen(endingId);
+
+    const slide1Narr = document.querySelector('#rev-panel-1 .narration-box');
+    if (slide1Narr) slide1Narr.textContent = `"${slide1Text}"`;
+
+    const slide2Narr = document.querySelector('#rev-panel-2 .narration-box');
+    if (slide2Narr) slide2Narr.textContent = `"${slide2Text}"`;
+    const slide2NarrBold = document.querySelector('#rev-panel-2 .narration-box.bold-text');
+    if (slide2NarrBold) slide2NarrBold.style.display = 'none';
+
+    const slide3Narr = document.querySelector('#rev-panel-3 .narration-box');
+    if (slide3Narr) slide3Narr.textContent = `"${slide3Narration}"`;
+    const slide3SpeechEl = document.querySelector('#rev-panel-3 .speech-bubble');
+    if (slide3SpeechEl) slide3SpeechEl.textContent = slide3Speech;
+
+    const slide4Narr = document.getElementById('rev-narration-4');
+    if (slide4Narr) slide4Narr.textContent = `"${slide4Narration}"`;
+
+    const labelEl = document.getElementById('rev-ending-label');
+    if (labelEl) labelEl.textContent = endingLabel;
+
+    const choiceLineEl = document.getElementById('rev-choice-line');
+    if (choiceLineEl) {
+      const choice = this.reconstructionSystem.selectedChoices['panel_who'];
+      choiceLineEl.textContent = (choice === 'detective')
+        ? 'You suspected yourself from the start.'
+        : 'You blamed a stranger. The boots were yours.';
+    }
+
+    const stats = this.clueSystem.getStats();
+    const statsLineEl = document.getElementById('rev-stats-line');
+    if (statsLineEl) {
+      statsLineEl.textContent = `EVIDENCE ${stats.collected}/${stats.total} | ERASED ${stats.lost} | RETRIES ${this.retriesCount} | TIME ${this.formatElapsedTime()}`;
+    }
+
+    const counterEl = document.getElementById('rev-endings-counter');
+    if (counterEl) {
+      counterEl.textContent = `ENDINGS FOUND: ${seenEndings.length}/3`;
+    }
+
     this.currentRevSlide = 0;
     this.updateRevelationSlideUI();
     this.setState(GAME_STATES.REVELATION);
@@ -909,6 +1098,12 @@ export class Game {
         }
       }
     });
+
+    if (this.currentRevSlide === 3) {
+      sfx.ending();
+    } else {
+      sfx.flip();
+    }
 
     if (this.btnNextPanel) {
       if (this.currentRevSlide >= this.revSlides.length - 1) {

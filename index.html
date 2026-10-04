@@ -47,6 +47,9 @@
                 <span class="key-badge">SPACE</span> / <span class="key-badge">TAP</span> : START CASE
               </div>
             </div>
+            <div class="mobile-touch-guide">
+              SWIPE OR USE THE D-PAD TO MOVE
+            </div>
             <button id="btn-start" class="comic-btn">INVESTIGATE [SPACE]</button>
           </div>
         </div>
@@ -167,9 +170,13 @@
               </div>
               <div id="rev-panel-4" class="rev-slide hidden">
                 <div class="impact-text">THE END?</div>
-                <div class="narration-box">
+                <div id="rev-narration-4" class="narration-box">
                   "Detective Snake was the intruder all along. The investigation was the crime."
                 </div>
+                <div id="rev-ending-label" class="ending-label">ENDING 1 OF 3: THE TRUTH</div>
+                <div id="rev-choice-line" class="choice-line">You suspected yourself from the start.</div>
+                <div id="rev-stats-line" class="ending-stats-line">EVIDENCE 6/8 | ERASED 2 | RETRIES 1 | TIME 07:42</div>
+                <div id="rev-endings-counter" class="endings-counter">ENDINGS FOUND: 1/3</div>
                 <button id="btn-play-again" class="comic-btn">PLAY AGAIN [SPACE]</button>
               </div>
             </div>
@@ -208,6 +215,7 @@
           <div class="hud-actions">
             <button id="btn-open-caseboard" class="hud-btn">📁 BOARD [C]</button>
             <button id="btn-open-reconstruct" class="hud-btn btn-highlight hidden">⚡ RECONSTRUCT [R]</button>
+            <button id="btn-mute" class="hud-btn">🔊 [M]</button>
           </div>
         </div>
 
@@ -223,6 +231,13 @@
         </div>
       </footer>
     </main>
+
+    <!-- Full-Screen Landscape Rotate Hint Overlay -->
+    <div id="rotate-hint" class="rotate-hint-screen">
+      <div class="screen-content">
+        <h2 class="noir-heading">ROTATE YOUR PHONE TO PORTRAIT</h2>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="js/main.js"></script>
