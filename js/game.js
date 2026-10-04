@@ -521,7 +521,8 @@ export class Game {
       this.modalSecondReconstruction,
       this.screenTwist,
       this.screenCaseIntro,
-      this.screenCaseSolved
+      this.screenCaseSolved,
+      this.evidenceToast
     ].some(el => el && !el.classList.contains('hidden'));
   }
 
@@ -714,6 +715,10 @@ export class Game {
   dismissToast() {
     if (!this.evidenceToast) return;
     this.evidenceToast.classList.add('hidden');
+    this.accumulator = 0;
+    if (typeof window !== 'undefined' && window.performance) {
+      this.lastFrameTime = performance.now();
+    }
   }
 
   toggleCaseBoard(forceState = null) {
