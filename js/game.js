@@ -176,25 +176,44 @@ export class Game {
       this.btnPlayAgain.addEventListener('click', () => this.startGame());
     }
 
-    // Keyboard listener for shortcuts
+    // Keyboard listener for shortcuts and actions
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
-        if (this.screenCaseIntro && !this.screenCaseIntro.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-          e.preventDefault();
-          this.startCase(this.currentCaseIndex);
-        } else if (this.screenCaseSolved && !this.screenCaseSolved.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-          e.preventDefault();
-          this.nextCase();
-        } else if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-          e.preventDefault();
-          if (this.currentRevSlide < this.revSlides.length - 1) {
-            this.nextRevelationPanel();
-          } else {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          if (e.repeat) return;
+
+          if (this.state === GAME_STATES.TITLE) {
+            e.preventDefault();
             this.startGame();
+          } else if (this.screenCaseIntro && !this.screenCaseIntro.classList.contains('hidden')) {
+            e.preventDefault();
+            this.startCase(this.currentCaseIndex);
+          } else if (this.screenCaseSolved && !this.screenCaseSolved.classList.contains('hidden')) {
+            e.preventDefault();
+            this.nextCase();
+          } else if (this.screenRevelation && !this.screenRevelation.classList.contains('hidden')) {
+            e.preventDefault();
+            if (this.currentRevSlide < this.revSlides.length - 1) {
+              this.nextRevelationPanel();
+            } else {
+              this.startGame();
+            }
+          } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden')) {
+            e.preventDefault();
+            this.acceptTwist();
+          } else if (this.state === GAME_STATES.GAME_OVER) {
+            e.preventDefault();
+            this.restartGame();
+          } else if (this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
+            e.preventDefault();
+            this.dismissToast();
+          } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
+            e.preventDefault();
+            this.confirmTheorySelection();
+          } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
+            e.preventDefault();
+            this.confirmSecondTheorySelection();
           }
-        } else if (this.screenTwist && !this.screenTwist.classList.contains('hidden') && (e.code === 'Space' || e.code === 'Enter')) {
-          e.preventDefault();
-          this.acceptTwist();
         } else if (e.code === 'KeyC') {
           e.preventDefault();
           if (this.state !== GAME_STATES.TITLE && this.state !== GAME_STATES.GAME_OVER && this.state !== GAME_STATES.REVELATION) {
@@ -216,12 +235,6 @@ export class Game {
               this.toggleReconstructionModal();
             }
           }
-        } else if ((e.code === 'Enter' || e.code === 'Space') && this.evidenceToast && !this.evidenceToast.classList.contains('hidden')) {
-          this.dismissToast();
-        } else if (e.code === 'Enter' && this.modalReconstruction && !this.modalReconstruction.classList.contains('hidden')) {
-          this.confirmTheorySelection();
-        } else if (e.code === 'Enter' && this.modalSecondReconstruction && !this.modalSecondReconstruction.classList.contains('hidden')) {
-          this.confirmSecondTheorySelection();
         }
       });
 
@@ -352,7 +365,9 @@ export class Game {
     if (this.caseIntroNarration) this.caseIntroNarration.textContent = `"${c.intro}"`;
 
     if (this.panelTag) this.panelTag.textContent = c.panelTag;
-    this.updateHUDClues();
+    if (this.hudCaseNum) this.hudCaseNum.textContent = `${caseIndex + 1}/${CASES.length}`;
+    if (this.hudClues) this.hudClues.textContent = `0/${c.requiredClues}`;
+
     this.setState(GAME_STATES.CASE_INTRO);
   }
 
@@ -687,6 +702,27 @@ export class Game {
     }
   }
 
+  getQuestionEvidenceText(q, isSecondReconstruct = false) {
+    if (!q.evidenceIds || q.evidenceIds.length === 0) {
+      return q.evidenceRef || '';
+    }
+
+    const items = q.evidenceIds.map(id => {
+      const clue = this.clueSystem.clues.find(c => c.id === id);
+      if (!clue) return `? Unknown`;
+
+      if (isSecondReconstruct && clue.isLost) {
+        return `❌ ${clue.name}`;
+      } else if (clue.isCollected) {
+        return `✓ ${clue.name}`;
+      } else {
+        return `? ${clue.name}`;
+      }
+    });
+
+    return items.join(' · ');
+  }
+
   renderReconstructionUI() {
     if (!this.reconstructEvidenceBadges || !this.reconstructQuestions) return;
 
@@ -721,7 +757,7 @@ export class Game {
 
       card.innerHTML = `
         <div class="question-title">${q.title}</div>
-        <div class="question-ref">SUPPORTING EVIDENCE: ${q.evidenceRef}</div>
+        <div class="question-ref">SUPPORTING EVIDENCE: ${this.getQuestionEvidenceText(q, false)}</div>
         <div class="options-group">${optionsHTML}</div>
       `;
 
@@ -793,7 +829,7 @@ export class Game {
 
       card.innerHTML = `
         <div class="question-title">${q.title}</div>
-        <div class="question-ref">PANEL STATUS: ${q.evidenceRef}</div>
+        <div class="question-ref">PANEL STATUS: ${this.getQuestionEvidenceText(q, true)}</div>
         <div class="options-group">${optionsHTML}</div>
       `;
 

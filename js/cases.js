@@ -80,6 +80,7 @@ export const CASES = [
         id: 'entry',
         title: 'I. POINT OF ENTRY',
         evidenceRef: 'Shattered Window & Muddy Footprints',
+        evidenceIds: ['shattered_glass', 'footprint'],
         options: [
           { id: 'window', label: 'THROUGH THE FIRE ESCAPE WINDOW', desc: 'Shattered glass indicates forced entry from outside.' },
           { id: 'door', label: 'THROUGH THE MAIN DOORWAY', desc: 'The intruder had a key or walked right past security.' }
@@ -89,6 +90,7 @@ export const CASES = [
         id: 'struggle',
         title: 'II. NATURE OF THE CONFRONTATION',
         evidenceRef: 'Bloodstain & Torn Photograph',
+        evidenceIds: ['blood_evidence', 'torn_photo'],
         options: [
           { id: 'ambush', label: 'THE VICTIM WAS AMBUSHED FROM BEHIND', desc: 'No defensive wounds. Surprised at the desk.' },
           { id: 'argument', label: 'A FIERCE ARGUMENT BROKE OUT', desc: 'Personal confrontation that escalated to violence.' }
@@ -98,6 +100,7 @@ export const CASES = [
         id: 'suspect',
         title: 'III. PRIMARY SUSPECT PROFILE',
         evidenceRef: 'Engraved Lighter ("D.S.")',
+        evidenceIds: ['engraved_lighter'],
         options: [
           { id: 'intruder', label: 'AN UNKNOWN BURGLAR IN HEAVY BOOTS', desc: 'A lone intruder seeking valuables.' },
           { id: 'insider', label: 'AN INSIDER CONNECTED TO THE POLICE', desc: 'Someone who knew the victim and left a personal item.' }
@@ -200,6 +203,7 @@ export const CASES = [
         id: 'office_taken',
         title: 'I. WHAT WAS TAKEN?',
         evidenceRef: 'Open Safe & Torn Ledger',
+        evidenceIds: ['open_safe', 'torn_ledger'],
         options: [
           { id: 'money', label: 'CASH FROM THE SAFE', desc: 'A simple robbery that went wrong.' },
           { id: 'secrets', label: 'THE LEDGER PAGES', desc: 'Someone needed the payments to disappear.' }
@@ -209,6 +213,7 @@ export const CASES = [
         id: 'office_access',
         title: 'II. WHO HAD ACCESS?',
         evidenceRef: 'No Forced Entry & Call To The Precinct',
+        evidenceIds: ['open_safe', 'office_phone'],
         options: [
           { id: 'stranger', label: 'A STRANGER PICKED THE LOCK', desc: 'A professional burglar with time to spare.' },
           { id: 'insider', label: 'SOMEONE FROM THE PRECINCT', desc: 'Someone with a key, a badge and a reason.' }
@@ -322,6 +327,7 @@ export const CASES = [
         id: 'panel_when',
         title: 'I. WHEN WAS THE PANEL DRAWN?',
         evidenceRef: 'Wet Inkwell & Pencil Sketch',
+        evidenceIds: ['wet_inkwell', 'pencil_sketch'],
         options: [
           { id: 'during', label: 'WHILE THE CRIME HAPPENED', desc: 'The artist was a witness.' },
           { id: 'after', label: 'AFTER, TO COVER IT UP', desc: 'Someone redrew the scene.' }
@@ -331,6 +337,7 @@ export const CASES = [
         id: 'panel_who',
         title: 'II. WHO IS IN THE SKETCH?',
         evidenceRef: 'Trench-Coat Figure & Bootprint Trail',
+        evidenceIds: ['bootprint_trail', 'pencil_sketch'],
         options: [
           { id: 'killer', label: 'THE KILLER', desc: 'A stranger who left the boots behind.' },
           { id: 'detective', label: 'THE DETECTIVE', desc: 'The boots stop exactly where the detective began.' }
@@ -340,6 +347,7 @@ export const CASES = [
         id: 'panel_lamp',
         title: 'III. WHY WAS THE LAMP SMASHED?',
         evidenceRef: 'Smashed Lamp & Torn Panel Edge',
+        evidenceIds: ['smashed_lamp', 'torn_edge'],
         options: [
           { id: 'darkness', label: 'THE KILLER NEEDED DARKNESS', desc: 'Light would have exposed the face.' },
           { id: 'unprinted', label: 'SOMEONE WANTED THE PANEL UNPRINTED', desc: 'The scene was never meant to be seen.' }

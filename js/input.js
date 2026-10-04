@@ -72,11 +72,6 @@ export class InputHandler {
         case 'KeyD':
           this.enqueueDirection('RIGHT');
           break;
-        // Action / Start / Restart
-        case 'Space':
-        case 'Enter':
-          if (this.onActionTrigger) this.onActionTrigger();
-          break;
       }
     });
   }
